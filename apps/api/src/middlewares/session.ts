@@ -3,7 +3,7 @@ import MongoStore from 'connect-mongo'
 import { DOMAIN, MONGO_URL, NODE_ENV, SESSION_SECRET } from '../config'
 
 const sessionMiddleware: ReturnType<typeof session> = session({
-    secret: SESSION_SECRET,
+    secret: SESSION_SECRET as string,
     resave: false,
     saveUninitialized: false,
     cookie: {
