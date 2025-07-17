@@ -4,6 +4,7 @@ import express from "express"
 import cookieParser from "cookie-parser"
 import cors from "cors"
 import { FRONTEND_URL } from './config'
+import sessionMiddleware from './middlewares/session'
 
 
 
@@ -24,7 +25,7 @@ app.use(cors({
 }))
 app.use(express.json())
 app.use(cookieParser())
-app.use()
+app.use(sessionMiddleware)
 
 
 
