@@ -115,8 +115,8 @@
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
     "lib": ["es2024"],
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "node16",
+    "moduleResolution": "node16",
     "target": "ES2022",
     "outDir": "dist",
     "rootDir": "src",

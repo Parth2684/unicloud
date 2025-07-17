@@ -4,8 +4,9 @@ import { FRONTEND_URL } from "../config";
 
 const router:Router = Router()
 
-router.get("/google", 
+router.get("/google/callback", 
     passport.authenticate('google', {
+        scope: ["profile", "email"],
         failureRedirect: '/login',
         successRedirect: `${FRONTEND_URL}/home`
     })

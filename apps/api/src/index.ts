@@ -2,10 +2,12 @@ import dotenv from 'dotenv'
 dotenv.config()
 import express from "express"
 import cookieParser from "cookie-parser"
+import './auth/passport'
 import cors from "cors"
 import { FRONTEND_URL } from './config'
 import sessionMiddleware from './middlewares/session'
 import passport from 'passport'
+import googleAuthRouter from './auth/googleAuthRouter'
 
 
 
@@ -29,6 +31,8 @@ app.use(cookieParser())
 app.use(sessionMiddleware)
 app.use(passport.initialize())
 app.use(passport.session())
+
+app.use("/auth", googleAuthRouter)
 
 
 
