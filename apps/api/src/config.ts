@@ -1,10 +1,6 @@
 import dotenv from 'dotenv'
 dotenv.config()
-export { prisma } from '@repo/db'
-export type {
-    User,
-    Prisma
-} from "@repo/db"
+
 
 export const POSTGRES_DATABASE_URL = process.env.POSTGRES_DATABASE_URL 
 export const FRONTEND_URL = process.env.FRONTEND_URL  

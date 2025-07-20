@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
       "@repo/typescript-config": ["packages/typescript-config"]

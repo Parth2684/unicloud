@@ -1,7 +1,7 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { BACKEND_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, prisma, User } from "../config";
-
+import { BACKEND_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } from "../config";
+import { prisma } from "@repo/db"
 
 passport.serializeUser((user: any,  done) => {
     done(null, user.id)
