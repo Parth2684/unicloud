@@ -1,9 +1,6 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
-  "generators": {
-    "react-component": ".turbo/generators/react-component/index.ts"
-  },
   "tasks": {
     "db:generate":{
       "cache": false

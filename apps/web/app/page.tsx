@@ -1,9 +1,7 @@
-
+import { Header } from "@repo/ui/header"
 
 export default function Home() {
-  return (
-    <div>
-      hi there 
-    </div>
-  );
+  return <div>
+    <Header />
+  </div>
 }
