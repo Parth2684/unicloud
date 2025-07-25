@@ -1,5 +1,5 @@
 export const Header = () => {
-    return<h1 className="text-3xl text-center bg-black font-bold">
-        {process.env.APP_NAME}
+    return<h1 className="bg-blue-300 text-4xl font-bold ">
+     hello
     </h1>
 }
