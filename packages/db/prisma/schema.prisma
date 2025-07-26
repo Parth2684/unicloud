@@ -15,58 +15,60 @@ datasource db {
 }
 
 model User {
-  id                    String          @id @default(uuid())
-  email                 String          @unique
-  name                  String          
-  image                 String?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
-  
-  cloudAccounts          CloudAccount[]    
-  quota                 Quota?    
-  jobs                  Job[]       
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cloudAccounts CloudAccount[]
+  quota         Quota?
+  jobs          Job[]
 }
 
 model CloudAccount {
-  id                    String        @id  @default(uuid())
-  userId                String
-  accessToken           String
-  refreshToken          String?
-  createdAt             DateTime      @default(now())
-  expiresAt             DateTime?
-  
-  provider              CloudProvider
-  user                  User          @relation(fields: [userId], references: [id])
+  id           String    @id @default(uuid())
+  userId       String
+  email        String
+  accessToken  String
+  refreshToken String?
+  isPrimary    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime?
+
+  provider CloudProvider
+  user     User          @relation(fields: [userId], references: [id])
 }
 
 model Quota {
-  id                    String        @id  @default(uuid())
-  
-  userId                String        @unique
-  addOnQuota            Float         @default(0)
-  usedQuota             Float         @default(0)
-  remainingQuota        Float         
-  freeQuota             Float         @default(5)
-  
-  quotaType             QuotaPlanType @default(FREE)
-  user                  User          @relation(fields: [userId], references: [id])       
+  id String @id @default(uuid())
+
+  userId         String @unique
+  addOnQuota     Float  @default(0)
+  usedQuota      Float  @default(0)
+  remainingQuota Float
+  freeQuota      Float  @default(5)
+
+  quotaType QuotaPlanType @default(FREE)
+  user      User          @relation(fields: [userId], references: [id])
 }
 
 model Job {
-  id                    String      @id @default(uuid())
-  userId                String
-  sourceCloudId         String?
-  targetCloudId         String
-  fileName              String?
-  fileSize              Float
-  errorMesage           String?
-  sourceLink            String
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+  id            String   @id @default(uuid())
+  userId        String
+  sourceCloudId String?
+  targetCloudId String
+  fileName      String?
+  fileSize      Float
+  errorMesage   String?
+  sourceLink    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  operation             OperationType
-  status                StatusType  @default(Processing)
-  user                  User        @relation(fields: [userId], references: [id])
+  operation OperationType
+  status    StatusType    @default(Processing)
+  user      User          @relation(fields: [userId], references: [id])
 }
 
 enum CloudProvider {
