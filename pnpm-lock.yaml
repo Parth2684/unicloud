@@ -44,9 +44,6 @@ importers:
       express-session:
         specifier: ^1.18.1
         version: 1.18.1
-      google-auth-library:
-        specifier: ^10.2.0
-        version: 10.2.0
       googleapis:
         specifier: ^154.0.0
         version: 154.0.0
@@ -84,6 +81,9 @@ importers:
       connect-mongo:
         specifier: ^5.1.0
         version: 5.1.0(express-session@1.18.1)(mongodb@6.17.0(socks@2.8.6))
+      google-auth-library:
+        specifier: ^10.2.0
+        version: 10.2.0
       ts-node-dev:
         specifier: ^2.0.0
         version: 2.0.0(@types/node@22.15.3)(typescript@5.8.3)

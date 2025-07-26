@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 import { BACKEND_URL, GOOGLE_DRIVE_CLIENT_ID, GOOGLE_DRIVE_CLIENT_SECRET } from "../config";
-import { Credentials } from "google-auth-library";
+// import { Credentials } from "google-auth-library";
 import axios from "axios";
 
 
@@ -24,7 +24,7 @@ export function getAuthUrl() {
     })
 }
 
-export async function getDriveTokens (code: string): Promise<{tokens: Credentials, email: string}> {
+export async function getDriveTokens (code: string): Promise<{tokens: any, email: string}> {
     const { tokens } = await oauth2client.getToken(code)
     if(!tokens.access_token) {
         throw new Error("Access token not received")
