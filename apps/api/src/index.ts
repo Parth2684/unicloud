@@ -7,7 +7,9 @@ import cors from "cors"
 import { FRONTEND_URL } from './config'
 import sessionMiddleware from './middlewares/session'
 import passport from 'passport'
-import googleAuthRouter from './auth/googleAuthRouter'
+import signinRouter from './auth/googleAuthRouter'
+import { requireAuthMiddleware } from './middlewares/requireAuth'
+import googleDriveConnect from "./routes/linkCloud/googleDrive"
 
 
 
@@ -31,10 +33,13 @@ app.use(cookieParser())
 app.use(sessionMiddleware)
 app.use(passport.initialize())
 app.use(passport.session())
+// Google single sign on 
+app.use("/api/v1/auth", signinRouter)
 
-app.use("/auth", googleAuthRouter)
-
-
+// require auth middleware 
+app.use(requireAuthMiddleware)
+// add google drive account or update token if it's expired
+app.use("/api/v1/auth", googleDriveConnect)
 
 
 

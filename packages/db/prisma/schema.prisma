@@ -39,11 +39,12 @@ model CloudAccount {
 
   provider CloudProvider
   user     User          @relation(fields: [userId], references: [id])
+
+  @@unique([userId, provider, email])
 }
 
 model Quota {
   id String @id @default(uuid())
-
   userId         String @unique
   addOnQuota     Float  @default(0)
   usedQuota      Float  @default(0)
