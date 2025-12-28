@@ -9,7 +9,6 @@ use axum::{
 use common::{
     db_connect::init_db, encrypt::decrypt, jwt_config::Claims, redis_connection::init_redis,
 };
-use entities::{job::ActiveModel as JobActive, sea_orm_active_enums::TransferType};
 use entities::{
     cloud_account::{
         ActiveModel as CloudAccountActive, Column as CloudAccountColumn,
@@ -17,6 +16,7 @@ use entities::{
     },
     sea_orm_active_enums::Status,
 };
+use entities::{job::ActiveModel as JobActive, sea_orm_active_enums::TransferType};
 use redis::AsyncTypedCommands;
 use reqwest::Client;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
@@ -189,13 +189,17 @@ pub async fn copy_file_or_folder(
                                                 JobActive {
                                                     id: Set(id),
                                                     from_drive: Set(Some(source_acc.id)),
-                                                    from_file_id: Set(Some(payload.from_file_id.clone())),
+                                                    from_file_id: Set(Some(
+                                                        payload.from_file_id.clone(),
+                                                    )),
                                                     is_folder: Set(Some(is_folder)),
                                                     to_drive: Set(destination_acc.id),
                                                     to_folder_id: Set(payload.to_folder_id.clone()),
                                                     user_id: Set(claims.id),
                                                     size: Set(size_i64),
-                                                    transfer_type: Set(Some(TransferType::GoogleToGoogle)),
+                                                    transfer_type: Set(
+                                                        TransferType::GoogleToGoogle,
+                                                    ),
                                                     ..Default::default()
                                                 },
                                                 db,
@@ -211,10 +215,7 @@ pub async fn copy_file_or_folder(
                                                 }
                                                 Ok(job) => {
                                                     match redis_conn
-                                                        .lpush(
-                                                            "copy:job",
-                                                            job.id.to_string(),
-                                                        )
+                                                        .lpush("copy:job", job.id.to_string())
                                                         .await
                                                     {
                                                         Err(err) => {

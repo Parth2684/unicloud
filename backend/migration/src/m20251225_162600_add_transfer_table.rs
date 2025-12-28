@@ -1,6 +1,7 @@
 use sea_orm_migration::{
     prelude::{extension::postgres::Type, *},
-    schema::*, sea_orm::EnumIter,
+    schema::*,
+    sea_orm::EnumIter,
 };
 
 #[derive(DeriveMigrationName)]
@@ -14,7 +15,12 @@ impl MigrationTrait for Migration {
             .create_type(
                 Type::create()
                     .as_enum(Status::Table)
-                    .values([Status::Pending, Status::Running, Status::Completed, Status::Failed])
+                    .values([
+                        Status::Pending,
+                        Status::Running,
+                        Status::Completed,
+                        Status::Failed,
+                    ])
                     .to_owned(),
             )
             .await?;
@@ -27,15 +33,16 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
-        
+
         manager
-            .create_type(Type::create()
-                .as_enum(LinkType::Table)
-                .values([LinkType::Torrent])
-                .to_owned()
+            .create_type(
+                Type::create()
+                    .as_enum(LinkType::Table)
+                    .values([LinkType::Torrent])
+                    .to_owned(),
             )
             .await?;
-        
+
         manager
             .create_table(
                 Table::create()
@@ -63,7 +70,12 @@ impl MigrationTrait for Migration {
                         ColumnDef::new(Job::Status)
                             .enumeration(
                                 Status::Table,
-                                [Status::Pending, Status::Running, Status::Completed, Status::Failed],
+                                [
+                                    Status::Pending,
+                                    Status::Running,
+                                    Status::Completed,
+                                    Status::Failed,
+                                ],
                             )
                             .not_null()
                             .default(Expr::cust("'pending'")),
@@ -71,14 +83,17 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Job::UserId).uuid().not_null())
                     .col(ColumnDef::new(Job::Size).big_integer())
                     .col(ColumnDef::new(Job::Link).string())
-                    .col(ColumnDef::new(Job::LinkType)
-                        .enumeration(LinkType::Table, 
-                        [LinkType::Torrent]
-                        )
+                    .col(
+                        ColumnDef::new(Job::LinkType)
+                            .enumeration(LinkType::Table, [LinkType::Torrent]),
                     )
-                    .col(ColumnDef::new(Job::TransferType)
-                        .enumeration(TransferType::Table, [TransferType::GoogleToGoogle, TransferType::MegaToGoogle])
-                        .not_null()
+                    .col(
+                        ColumnDef::new(Job::TransferType)
+                            .enumeration(
+                                TransferType::Table,
+                                [TransferType::GoogleToGoogle, TransferType::MegaToGoogle],
+                            )
+                            .not_null(),
                     )
                     .foreign_key(
                         ForeignKey::create()
@@ -125,7 +140,7 @@ enum Job {
     Size,
     Link,
     LinkType,
-    TransferType
+    TransferType,
 }
 
 #[derive(DeriveIden)]
@@ -146,7 +161,7 @@ enum Status {
     Pending,
     Running,
     Completed,
-    Failed
+    Failed,
 }
 
 #[derive(DeriveIden)]

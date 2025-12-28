@@ -8,8 +8,8 @@ use tokio::{sync::Semaphore, task};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
 
 use crate::job::process_job;
-mod job;
 mod handlers;
+mod job;
 
 #[tokio::main]
 async fn main() {
@@ -29,7 +29,7 @@ async fn main() {
     loop {
         let permit = semaphore.clone().acquire_owned().await.unwrap();
         let job_id = redis_conn
-            .brpoplpush("copy:job", "proccessing", 1.0)
+            .brpoplpush("copy:job", "processing", 1.0)
             .await
             .ok();
         if let Some(id) = job_id {
