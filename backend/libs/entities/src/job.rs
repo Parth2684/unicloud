@@ -24,6 +24,7 @@ pub struct Model {
     pub link: Option<String>,
     pub link_type: Option<LinkType>,
     pub transfer_type: TransferType,
+    pub fail_reason: Option<String>,
     #[sea_orm(
         belongs_to,
         relation_enum = "CloudAccount2",

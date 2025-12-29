@@ -1,13 +1,19 @@
 use std::sync::{Arc, Mutex};
 
-use common::{db_connect::init_db, redis_connection::init_redis};
+use common::{db_connect::init_db, encrypt::decrypt, redis_connection::init_redis};
 use entities::{
+    cloud_account::{
+        ActiveModel as CloudAccountActive, Column as CloudAccountColumn,
+        Entity as CloudAccountEntity,
+    },
     job::{ActiveModel as JobActive, Column as JobColumn, Entity as JobEntity, Model as JobModel},
     quota::{Column as QuotaColumn, Entity as QuotaEntity},
     sea_orm_active_enums::Status,
 };
 use redis::AsyncTypedCommands;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+
+use crate::helpers::fetch_permission_google::fetch_permissions;
 
 pub async fn copy_google_to_google(job: JobModel) {
     let (db, mut redis_conn) = tokio::join!(init_db(), init_redis());
@@ -107,7 +113,69 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                 );
                                                 return;
                                             }
-                                            Ok(_) => {}
+                                            Ok(_) => {
+                                                let cloud_acc = CloudAccountEntity::find()
+                                                    .filter(
+                                                        CloudAccountColumn::Id
+                                                            .eq(from_drive.clone()),
+                                                    )
+                                                    .one(db)
+                                                    .await;
+                                                if let Ok(Some(acc)) = cloud_acc {
+                                                    match decrypt(&acc.access_token) {
+                                                        Err(err) => {
+                                                            eprintln!(
+                                                                "error decrypting token: {:?}",
+                                                                err
+                                                            );
+                                                            redis_conn
+                                                                .lrem(
+                                                                    "processing",
+                                                                    1,
+                                                                    job.id.to_string(),
+                                                                )
+                                                                .await
+                                                                .ok();
+                                                            let mut edit_job: JobActive =
+                                                                job.clone().into();
+                                                            edit_job.status = Set(Status::Failed);
+                                                            edit_job.update(db).await.ok();
+                                                            let mut edit_cloud: CloudAccountActive =
+                                                                acc.into();
+                                                            edit_cloud.token_expired = Set(true);
+                                                            edit_cloud.update(db).await.ok();
+                                                        }
+                                                        Ok(token) => {
+                                                            match fetch_permissions(
+                                                                from_file_id,
+                                                                &token,
+                                                            )
+                                                            .await
+                                                            {
+                                                                Err(err) => {
+                                                                    eprintln!(
+                                                                        "error fetching permission: {err:?}"
+                                                                    );
+                                                                    let mut edit_job: JobActive =
+                                                                        job.clone().into();
+                                                                    edit_job.fail_reason =
+                                                                        Set(Some(err));
+                                                                    edit_job.update(db).await.ok();
+                                                                    redis_conn
+                                                                        .lrem(
+                                                                            "processing",
+                                                                            1,
+                                                                            job.id.to_string(),
+                                                                        )
+                                                                        .await
+                                                                        .ok();
+                                                                }
+                                                                Ok(_) => {}
+                                                            };
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         };
                                     }
                                 }
