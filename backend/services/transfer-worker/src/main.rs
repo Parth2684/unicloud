@@ -9,6 +9,7 @@ use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, Quer
 
 use crate::job::process_job;
 mod handlers;
+mod helpers;
 mod job;
 
 #[tokio::main]

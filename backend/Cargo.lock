@@ -4013,6 +4013,7 @@ dependencies = [
  "common",
  "entities",
  "redis",
+ "reqwest",
  "sea-orm",
  "serde",
  "tokio",

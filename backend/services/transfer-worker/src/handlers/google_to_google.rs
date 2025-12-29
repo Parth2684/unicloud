@@ -91,8 +91,24 @@ pub async fn copy_google_to_google(job: JobModel) {
                                     }
                                 }
                                 Some(quo) => {
-                                    if quo.add_on_quota > size {
-                                        todo!();
+                                    if quo.remaining_quota > size {
+                                        let mut edit_job: JobActive = job.clone().into();
+                                        edit_job.status = Set(Status::Running);
+                                        match edit_job.update(db).await {
+                                            Err(err) => {
+                                                eprintln!("Error connecting to db: {err:?}");
+                                                let (_, _) = (
+                                                    redis_conn
+                                                        .lrem("processing", 1, job.id.to_string())
+                                                        .await,
+                                                    redis_conn
+                                                        .lpush("copy:job", job.id.to_string())
+                                                        .await,
+                                                );
+                                                return;
+                                            }
+                                            Ok(_) => {}
+                                        };
                                     }
                                 }
                             },

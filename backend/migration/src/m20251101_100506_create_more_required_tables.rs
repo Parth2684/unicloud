@@ -74,7 +74,7 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
-        let five_gb: i64 = 5368709120;
+        let ten_gb: i64 = 10737418240;
         manager
             .create_table(
                 Table::create()
@@ -92,7 +92,7 @@ impl MigrationTrait for Migration {
                         ColumnDef::new(Quota::FreeQuota)
                             .big_integer()
                             .not_null()
-                            .default(five_gb),
+                            .default(ten_gb),
                     )
                     .col(
                         ColumnDef::new(Quota::AddOnQuota)
@@ -104,7 +104,7 @@ impl MigrationTrait for Migration {
                         ColumnDef::new(Quota::TotalQuota)
                             .big_integer()
                             .not_null()
-                            .default(0),
+                            .default(ten_gb),
                     )
                     .col(
                         ColumnDef::new(Quota::UsedQuota)
@@ -116,7 +116,7 @@ impl MigrationTrait for Migration {
                         ColumnDef::new(Quota::RemainingQuota)
                             .big_integer()
                             .not_null()
-                            .default(0),
+                            .default(ten_gb),
                     )
                     .col(
                         ColumnDef::new(Quota::QuotaType)
