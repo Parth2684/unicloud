@@ -11,9 +11,14 @@ use entities::{
     sea_orm_active_enums::Status,
 };
 use redis::AsyncTypedCommands;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityOrSelect, EntityTrait, QueryFilter, QuerySelect, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, EntityOrSelect, EntityTrait, QueryFilter, QuerySelect, Set,
+};
 
-use crate::helpers::{create_permission::{self, create_permission}, fetch_permission_google::fetch_permissions};
+use crate::helpers::{
+    fetch_permission_google::fetch_permissions,
+    share_google::{copy_file, create_permission},
+};
 
 pub async fn copy_google_to_google(job: JobModel) {
     let (db, mut redis_conn) = tokio::join!(init_db(), init_redis());
@@ -139,7 +144,11 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                             let mut edit_job: JobActive =
                                                                 job.clone().into();
                                                             edit_job.status = Set(Status::Failed);
-                                                            edit_job.fail_reason = Set(Some(String::from("Error Decrypting your access token from source account please try refreshing your account")));
+                                                            edit_job.fail_reason = Set(Some(
+                                                                String::from(
+                                                                    "Error Decrypting your access token from source account please try refreshing your account",
+                                                                ),
+                                                            ));
                                                             edit_job.update(db).await.ok();
                                                             let mut edit_cloud: CloudAccountActive =
                                                                 acc.into();
@@ -172,13 +181,39 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                         .ok();
                                                                 }
                                                                 Ok(_) => {
-                                                                    create_permission(&token, &from_file_id).await;
                                                                     let destination_acc = CloudAccountEntity::find()
                                                                         .filter(CloudAccountColumn::Id.eq(job.to_drive))
                                                                         .one(db)
                                                                         .await;
-                                                                    if let Ok(Some(dest_acc)) = destination_acc {
-                                                                        match decrypt(&dest_acc.access_token) {
+                                                                    if let Ok(Some(dest_acc)) =
+                                                                        destination_acc
+                                                                    {
+                                                                        match create_permission(
+                                                                            &token,
+                                                                            &from_file_id,
+                                                                            &dest_acc.email,
+                                                                        )
+                                                                        .await
+                                                                        {
+                                                                            Err(err) => {
+                                                                                eprintln!(
+                                                                                    "{err:?}"
+                                                                                );
+                                                                                let mut edit_job: JobActive = job.clone().into();
+                                                                                edit_job
+                                                                                    .fail_reason =
+                                                                                    Set(Some(err));
+                                                                                edit_job.status = Set(Status::Failed);
+                                                                                edit_job
+                                                                                    .update(db)
+                                                                                    .await
+                                                                                    .ok();
+                                                                            }
+                                                                            Ok(_) => (),
+                                                                        };
+                                                                        match decrypt(
+                                                                            &dest_acc.access_token,
+                                                                        ) {
                                                                             Err(err) => {
                                                                                 eprintln!(
                                                                                     "error decrypting token: {:?}",
@@ -196,33 +231,52 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                     job.clone().into();
                                                                                 edit_job.status = Set(Status::Failed);
                                                                                 edit_job.fail_reason = Set(Some(String::from("Error Decrypting your access token from destination account please try refreshing your account")));
-                                                                                edit_job.update(db).await.ok();
+                                                                                edit_job
+                                                                                    .update(db)
+                                                                                    .await
+                                                                                    .ok();
                                                                                 let mut edit_cloud: CloudAccountActive =
                                                                                     dest_acc.into();
                                                                                 edit_cloud.token_expired = Set(true);
-                                                                                edit_cloud.update(db).await.ok();
-                                                                            
+                                                                                edit_cloud
+                                                                                    .update(db)
+                                                                                    .await
+                                                                                    .ok();
                                                                             }
                                                                             Ok(dest_token) => {
-                                                                                
-                                                                                
+                                                                                match copy_file(&dest_token, from_file_id, &job.to_folder_id, &job.id).await {
+                                                                                    Err(err) => {
+                                                                                        let mut edit_job: JobActive = job.clone().into();
+                                                                                        edit_job.status = Set(Status::Failed);
+                                                                                        edit_job.fail_reason = Set(Some(err));
+                                                                                        edit_job.update(db).await.ok();
+                                                                                    }
+                                                                                    Ok(_) => {
+                                                                                        
+                                                                                    }
+                                                                                };
                                                                             }
                                                                         };
-                                                                        
                                                                     }
                                                                 }
                                                             };
                                                         }
                                                     }
-                                                }
-                                                else {
-                                                    let mut edit_job: JobActive = job.clone().into();
+                                                } else {
+                                                    let mut edit_job: JobActive =
+                                                        job.clone().into();
                                                     edit_job.status = Set(Status::Failed);
-                                                    edit_job.fail_reason = Set(Some(String::from("Error retrieving source account")));
+                                                    edit_job.fail_reason = Set(Some(String::from(
+                                                        "Error retrieving source account",
+                                                    )));
                                                     edit_job.update(db).await.ok();
                                                     let (_, _) = (
                                                         redis_conn
-                                                            .lrem("processing", 1, job.id.to_string())
+                                                            .lrem(
+                                                                "processing",
+                                                                1,
+                                                                job.id.to_string(),
+                                                            )
                                                             .await,
                                                         redis_conn
                                                             .lpush("copy:job", job.id.to_string())

@@ -96,6 +96,7 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     .col(ColumnDef::new(Job::FailReason).string())
+                    .col(ColumnDef::new(Job::PermissionId).array(ColumnType::Text))
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-job-user-id")
@@ -143,6 +144,7 @@ enum Job {
     LinkType,
     TransferType,
     FailReason,
+    PermissionId,
 }
 
 #[derive(DeriveIden)]
