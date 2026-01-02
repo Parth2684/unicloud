@@ -1,7 +1,12 @@
 use common::db_connect::init_db;
-use entities::{job::{ActiveModel as JobActive, Column as JobColumn, Entity as JobEntity}, sea_orm_active_enums::Status};
+use entities::{
+    job::{ActiveModel as JobActive, Column as JobColumn, Entity as JobEntity},
+    sea_orm_active_enums::Status,
+};
 use reqwest::{Client, StatusCode};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, prelude::Uuid};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, prelude::Uuid,
+};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -66,7 +71,7 @@ pub async fn copy_file(
         }))
         .send()
         .await;
-    
+
     match response {
         Err(err) => {
             eprintln!("{err:?}");
@@ -89,7 +94,7 @@ pub async fn copy_file(
                     r.permissions.iter().for_each(|permission| {
                         permission_ids.push(permission.id.clone());
                     });
-                    edit_job.permission_id = Set(Some(permission_ids));
+                    edit_job.permission_id = Set(Some(permission_ids.clone()));
                     edit_job.status = Set(Status::Completed);
                     edit_job.update(db).await.ok();
                     Ok(permission_ids)
@@ -101,7 +106,42 @@ pub async fn copy_file(
     }
 }
 
+pub async fn remove_permission(
+    permission_ids: Vec<String>,
+    file_id: &str,
+    token: &str,
+    job_id: &Uuid,
+) {
+    let client = Client::new();
+    let db = init_db().await;
+    let mut delete_futures = Vec::new();
 
-pub async fn remove_permission (permission_ids: Vec<String>) {
-    
+    permission_ids.iter().for_each(|permission_id| {
+        let response = client
+            .delete(format!(
+                "https://www.googleapis.com/drive/v3/files/{file_id}/permissions/{permission_id}"
+            ))
+            .bearer_auth(token)
+            .send();
+        delete_futures.push(response);
+    });
+
+    let results = futures::future::join_all(delete_futures).await;
+    for result in results {
+        match result {
+            Ok(_) => continue,
+            Err(err) => {
+                eprintln!("{err:?}");
+                let job = JobEntity::find()
+                    .filter(JobColumn::Id.eq(job_id.to_owned()))
+                    .one(db)
+                    .await;
+                if let Ok(Some(j)) = job {
+                    let mut edit_job: JobActive = j.into();
+                    edit_job.fail_reason = Set(Some(String::from("Error removing permissions")));
+                    edit_job.update(db).await.ok();
+                }
+            }
+        }
+    }
 }

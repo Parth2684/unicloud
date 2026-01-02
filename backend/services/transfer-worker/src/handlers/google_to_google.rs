@@ -17,7 +17,7 @@ use sea_orm::{
 
 use crate::helpers::{
     fetch_permission_google::fetch_permissions,
-    share_google::{copy_file, create_permission},
+    share_google::{copy_file, create_permission, remove_permission},
 };
 
 pub async fn copy_google_to_google(job: JobModel) {
@@ -251,8 +251,8 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                         edit_job.fail_reason = Set(Some(err));
                                                                                         edit_job.update(db).await.ok();
                                                                                     }
-                                                                                    Ok(_) => {
-                                                                                        
+                                                                                    Ok(ids) => {
+                                                                                        remove_permission(ids, from_file_id, &token, &job.id).await;
                                                                                     }
                                                                                 };
                                                                             }
