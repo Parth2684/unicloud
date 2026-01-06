@@ -4013,12 +4013,15 @@ dependencies = [
  "common",
  "entities",
  "futures",
+ "futures-util",
  "redis",
  "reqwest",
  "sea-orm",
  "serde",
  "serde_json",
  "tokio",
+ "tokio-tungstenite",
+ "url",
 ]
 
 [[package]]

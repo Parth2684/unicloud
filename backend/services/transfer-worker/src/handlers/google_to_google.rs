@@ -15,13 +15,12 @@ use sea_orm::{
 };
 
 use crate::helpers::{
-    fetch_permission_google::fetch_permissions,
-    share_google::{copy_file, create_permission, remove_permission},
+    fetch_permission_google::fetch_permissions, refresh_clouds::refresh_clouds, share_google::{copy_file, create_permission, remove_permission}
 };
 
 pub async fn copy_google_to_google(job: JobModel) {
     let (db, mut redis_conn) = tokio::join!(init_db(), init_redis());
-
+    refresh_clouds(&job.claims).await;
     if let (Some(from_drive), Some(from_file_id), Some(is_folder)) =
         (&job.from_drive, &job.from_file_id, &job.is_folder)
     {
@@ -245,6 +244,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                     .ok();
                                                                             }
                                                                             Ok(dest_token) => {
+                                                                                
                                                                                 match copy_file(&dest_token, from_file_id, &job.to_folder_id, &job.id).await {
                                                                                     Err(err) => {
                                                                                         let mut edit_job: JobActive = job.clone().into();

@@ -32,6 +32,7 @@ pub struct CopyInputs {
     from_file_id: String,
     to_drive: String,
     to_folder_id: String,
+    jwt_token: String
 }
 
 #[derive(Deserialize)]
@@ -192,6 +193,7 @@ pub async fn copy_file_or_folder(
                                                     from_file_id: Set(Some(
                                                         payload.from_file_id.clone(),
                                                     )),
+                                                    claims: Set(payload.jwt_token),
                                                     is_folder: Set(Some(is_folder)),
                                                     to_drive: Set(destination_acc.id),
                                                     to_folder_id: Set(payload.to_folder_id.clone()),
