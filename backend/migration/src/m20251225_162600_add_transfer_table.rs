@@ -1,6 +1,5 @@
 use sea_orm_migration::{
     prelude::{extension::postgres::Type, *},
-    schema::*,
     sea_orm::EnumIter,
 };
 
