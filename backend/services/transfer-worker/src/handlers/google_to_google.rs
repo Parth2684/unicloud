@@ -1,4 +1,3 @@
-use std::sync::{Arc, Mutex};
 
 use common::{db_connect::init_db, encrypt::decrypt, redis_connection::init_redis};
 use entities::{
@@ -7,12 +6,12 @@ use entities::{
         Entity as CloudAccountEntity,
     },
     job::{ActiveModel as JobActive, Column as JobColumn, Entity as JobEntity, Model as JobModel},
-    quota::{Column as QuotaColumn, Entity as QuotaEntity},
+    quota::{Column as QuotaColumn, Entity as QuotaEntity, ActiveModel as QuotaActive },
     sea_orm_active_enums::Status,
 };
 use redis::AsyncTypedCommands;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityOrSelect, EntityTrait, QueryFilter, QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set,
 };
 
 use crate::helpers::{
@@ -73,7 +72,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                             .one(db)
                             .await;
                         match quota {
-                            Err(err) => {
+                            Err(_err) => {
                                 let (remove_processing, add_copy) = (
                                     redis_conn.lrem("processing", 1, job.id.to_string()).await,
                                     redis_conn.lpush("copy:job", job.id.to_string()).await,
@@ -96,6 +95,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                             eprintln!("error rempving from processing: {err:?}");
                                             let mut edit_job: JobActive = job.into();
                                             edit_job.status = Set(Status::Failed);
+                                            edit_job.fail_reason = Set(Some(String::from("Error Getting quota")));
                                             edit_job.update(db).await.ok();
                                             return;
                                         }
@@ -208,6 +208,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                     .update(db)
                                                                                     .await
                                                                                     .ok();
+                                                                                redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
                                                                             }
                                                                             Ok(_) => (),
                                                                         };
@@ -250,9 +251,25 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                         edit_job.status = Set(Status::Failed);
                                                                                         edit_job.fail_reason = Set(Some(err));
                                                                                         edit_job.update(db).await.ok();
+                                                                                        redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
+                                                                                        
                                                                                     }
                                                                                     Ok(ids) => {
                                                                                         remove_permission(ids, from_file_id, &token, &job.id).await;
+                                                                                        redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
+                                                                                        let remaining_add_on = &quo.add_on_quota;
+                                                                                        if remaining_add_on >= &size {
+                                                                                            let mut edit_quota: QuotaActive = quo.clone().into();
+                                                                                            edit_quota.add_on_quota = Set(remaining_add_on - size);
+                                                                                            edit_quota.update(db).await.ok();
+                                                                                        }else {
+                                                                                            let edit_free_quota = &size - remaining_add_on;
+                                                                                            let mut edit_quota: QuotaActive = quo.clone().into();
+                                                                                            edit_quota.add_on_quota = Set(0);
+                                                                                            edit_quota.free_quota = Set(edit_free_quota);
+                                                                                            edit_quota.update(db).await.ok();
+                                                                                        }
+                                                                                        
                                                                                     }
                                                                                 };
                                                                             }
