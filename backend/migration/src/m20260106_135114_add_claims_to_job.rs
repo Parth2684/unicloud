@@ -6,7 +6,6 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-
         manager
             .alter_table(
                 Table::alter()
@@ -25,15 +24,14 @@ impl MigrationTrait for Migration {
                 Table::alter()
                     .table(Job::Table)
                     .drop_column_if_exists(Job::Claims)
-                    .to_owned()
+                    .to_owned(),
             )
             .await
     }
 }
 
-
 #[derive(DeriveIden)]
 enum Job {
     Table,
-    Claims
+    Claims,
 }

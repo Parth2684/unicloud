@@ -1,5 +1,5 @@
 use crate::handlers::ws_handle::{PeerMap, accept_connection};
-use common::{redis_connection::init_redis};
+use common::redis_connection::init_redis;
 use std::{
     collections::HashMap,
     fmt::Error,

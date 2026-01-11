@@ -9,5 +9,5 @@ pub enum JobStage {
     Copying,
     Finalizing,
     Completed,
-    Failed
+    Failed,
 }

@@ -109,8 +109,14 @@ pub async fn copy_google_to_google(job: JobModel) {
                                             edit_job.fail_reason =
                                                 Set(Some(String::from("Error Getting quota")));
                                             let (_, _) = tokio::join!(
-                                                edit_job.update(db),       
-                                                progress_pub(&job.user_id, &job.id, JobStage::Failed, "Failed...", 0)
+                                                edit_job.update(db),
+                                                progress_pub(
+                                                    &job.user_id,
+                                                    &job.id,
+                                                    JobStage::Failed,
+                                                    "Failed...",
+                                                    0
+                                                )
                                             );
                                             return;
                                         }
@@ -150,6 +156,14 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                     .one(db)
                                                     .await;
                                                 if let Ok(Some(acc)) = cloud_acc {
+                                                    progress_pub(
+                                                        &job.user_id,
+                                                        &job.id,
+                                                        JobStage::Auth,
+                                                        "Decrypting Tokens, Checking Auth",
+                                                        6,
+                                                    )
+                                                    .await;
                                                     match decrypt(&acc.access_token) {
                                                         Err(err) => {
                                                             eprintln!(
@@ -172,13 +186,15 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                     "Error Decrypting your access token from source account please try refreshing your account",
                                                                 ),
                                                             ));
-                                                            let (_, _) = tokio::join!(edit_job.update(db),progress_pub(
-                                                                &job.user_id,
-                                                                &job.id,
-                                                                JobStage::Failed,
-                                                                "Failed...",
-                                                                0,
-                                                            )
+                                                            let (_, _) = tokio::join!(
+                                                                edit_job.update(db),
+                                                                progress_pub(
+                                                                    &job.user_id,
+                                                                    &job.id,
+                                                                    JobStage::Failed,
+                                                                    "Failed...",
+                                                                    0,
+                                                                )
                                                             );
                                                             let mut edit_cloud: CloudAccountActive =
                                                                 acc.into();
@@ -186,6 +202,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                             edit_cloud.update(db).await.ok();
                                                         }
                                                         Ok(token) => {
+                                                            progress_pub(&job.user_id, &job.id, JobStage::Permissions, "Checking Permissions if user can share files directly", 15).await;
                                                             match fetch_permissions(
                                                                 from_file_id,
                                                                 &token,
@@ -200,14 +217,13 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                         job.clone().into();
                                                                     edit_job.fail_reason =
                                                                         Set(Some(err));
-                                                                    let(_, _, _) = tokio::join!(edit_job.update(db),
-                                                                    redis_conn
-                                                                        .lrem(
+                                                                    let (_, _, _) = tokio::join!(
+                                                                        edit_job.update(db),
+                                                                        redis_conn.lrem(
                                                                             "processing",
                                                                             1,
                                                                             job.id.to_string(),
-                                                                        )
-                                                                        ,
+                                                                        ),
                                                                         progress_pub(
                                                                             &job.user_id,
                                                                             &job.id,
@@ -215,8 +231,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                             "Failed...",
                                                                             0,
                                                                         )
-                                                                        );
-                                                                    
+                                                                    );
                                                                 }
                                                                 Ok(_) => {
                                                                     let destination_acc = CloudAccountEntity::find()
@@ -226,6 +241,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                     if let Ok(Some(dest_acc)) =
                                                                         destination_acc
                                                                     {
+                                                                        progress_pub(&job.user_id, &job.id, JobStage::Sharing, "Sharing file with destinationm account", 25).await;
                                                                         match create_permission(
                                                                             &token,
                                                                             &from_file_id,
@@ -255,6 +271,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                             }
                                                                             Ok(_) => (),
                                                                         };
+                                                                        progress_pub(&job.user_id, &job.id, JobStage::Auth, "Decrypting Tokens of destination account", 40).await;
                                                                         match decrypt(
                                                                             &dest_acc.access_token,
                                                                         ) {
@@ -278,11 +295,11 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                     ),
                                                                                     edit_job.update(db),
                                                                                     edit_cloud.update(db),
-                                                                                    progress_pub(&job.user_id, &job.id, JobStage::Failed, "Failed...", 0)                                                                                    
+                                                                                    progress_pub(&job.user_id, &job.id, JobStage::Failed, "Failed...", 0)
                                                                                 );
-                                                                                
                                                                             }
                                                                             Ok(dest_token) => {
+                                                                                progress_pub(&job.user_id, &job.id, JobStage::Copying, "Copying File to destination", 80).await;
                                                                                 match copy_file(&dest_token, from_file_id, &job.to_folder_id, &job.id).await {
                                                                                     Err(err) => {
                                                                                         let mut edit_job: JobActive = job.clone().into();
@@ -293,21 +310,25 @@ pub async fn copy_google_to_google(job: JobModel) {
 
                                                                                     }
                                                                                     Ok(ids) => {
+                                                                                        progress_pub(&job.user_id, &job.id, JobStage::Finalizing, "Removing permissions of the destination account from the source file", 92).await;
                                                                                         remove_permission(ids, from_file_id, &token, &job.id).await;
                                                                                         redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
                                                                                         let remaining_add_on = &quo.add_on_quota;
+                                                                                        let remaining_overall = &quo.remaining_quota - &size;
                                                                                         if remaining_add_on >= &size {
                                                                                             let mut edit_quota: QuotaActive = quo.clone().into();
                                                                                             edit_quota.add_on_quota = Set(remaining_add_on - size);
+                                                                                            edit_quota.remaining_quota = Set(remaining_overall);
                                                                                             edit_quota.update(db).await.ok();
                                                                                         }else {
                                                                                             let edit_free_quota = &size - remaining_add_on;
                                                                                             let mut edit_quota: QuotaActive = quo.clone().into();
+                                                                                            edit_quota.remaining_quota = Set(remaining_overall);
                                                                                             edit_quota.add_on_quota = Set(0);
                                                                                             edit_quota.free_quota = Set(edit_free_quota);
                                                                                             edit_quota.update(db).await.ok();
                                                                                         }
-
+                                                                                        progress_pub(&job.user_id, &job.id, JobStage::Completed, "Completed The Job Successfully", 100).await;
                                                                                     }
                                                                                 };
                                                                             }

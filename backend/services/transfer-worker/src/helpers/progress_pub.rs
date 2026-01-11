@@ -1,6 +1,6 @@
+use common::{enums::JobStage, redis_connection::init_redis};
 use redis::AsyncTypedCommands;
 use serde::Serialize;
-use common::{enums::JobStage, redis_connection::init_redis};
 use uuid::Uuid;
 
 #[derive(Serialize)]
@@ -9,17 +9,23 @@ struct JobProgress {
     job_id: Uuid,
     stage: JobStage,
     message: String,
-    progress: u8
+    progress: u8,
 }
 
-pub async fn progress_pub(user_id: &Uuid, job_id: &Uuid, stage: JobStage, message: &str, progress: u8) {
+pub async fn progress_pub(
+    user_id: &Uuid,
+    job_id: &Uuid,
+    stage: JobStage,
+    message: &str,
+    progress: u8,
+) {
     let mut redis_conn = init_redis().await;
     match serde_json::to_string(&JobProgress {
         user_id: user_id.to_owned(),
         job_id: job_id.to_owned(),
         stage: stage,
         message: message.to_owned(),
-        progress: progress
+        progress: progress,
     }) {
         Err(err) => eprintln!("error serializing progress: {err:?}"),
         Ok(job) => {
@@ -27,5 +33,4 @@ pub async fn progress_pub(user_id: &Uuid, job_id: &Uuid, stage: JobStage, messag
             redis_conn.publish(channel, job).await.ok();
         }
     };
-    
 }

@@ -32,7 +32,7 @@ pub struct CopyInputs {
     from_file_id: String,
     to_drive: String,
     to_folder_id: String,
-    jwt_token: String
+    jwt_token: String,
 }
 
 #[derive(Deserialize)]

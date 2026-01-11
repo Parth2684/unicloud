@@ -68,6 +68,6 @@ pub static ENVS: Lazy<Envs> = Lazy::new(|| {
         encryption_key,
         redis_url,
         domain,
-        websocket_url
+        websocket_url,
     }
 });
