@@ -89,7 +89,7 @@ pub async fn accept_connection(
                 Some(tok) => tok.to_owned(),
             };
 
-            let (tx, rx) = unbounded();
+            let (tx, _rx) = unbounded();
             match peer_map.lock() {
                 Ok(mut peers) => {
                     peers.insert(addr, tx);

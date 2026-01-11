@@ -1,6 +1,5 @@
 use crate::handlers::ws_handle::{PeerMap, accept_connection};
-use common::{export_envs::ENVS, redis_connection::init_redis};
-use redis::aio::ConnectionManager;
+use common::{redis_connection::init_redis};
 use std::{
     collections::HashMap,
     fmt::Error,

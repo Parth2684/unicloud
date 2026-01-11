@@ -3,3 +3,4 @@ pub mod encrypt;
 pub mod export_envs;
 pub mod jwt_config;
 pub mod redis_connection;
+pub mod enums;

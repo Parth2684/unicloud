@@ -1,21 +1,23 @@
-
-use common::{db_connect::init_db, encrypt::decrypt, redis_connection::init_redis};
+use common::{
+    db_connect::init_db, encrypt::decrypt, enums::JobStage, redis_connection::init_redis,
+};
 use entities::{
     cloud_account::{
         ActiveModel as CloudAccountActive, Column as CloudAccountColumn,
         Entity as CloudAccountEntity,
     },
     job::{ActiveModel as JobActive, Column as JobColumn, Entity as JobEntity, Model as JobModel},
-    quota::{Column as QuotaColumn, Entity as QuotaEntity, ActiveModel as QuotaActive },
+    quota::{ActiveModel as QuotaActive, Column as QuotaColumn, Entity as QuotaEntity},
     sea_orm_active_enums::Status,
 };
 use redis::AsyncTypedCommands;
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set,
-};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
 use crate::helpers::{
-    fetch_permission_google::fetch_permissions, refresh_clouds::refresh_clouds, share_google::{copy_file, create_permission, remove_permission}
+    fetch_permission_google::fetch_permissions,
+    progress_pub::progress_pub,
+    refresh_clouds::refresh_clouds,
+    share_google::{copy_file, create_permission, remove_permission},
 };
 
 pub async fn copy_google_to_google(job: JobModel) {
@@ -66,12 +68,22 @@ pub async fn copy_google_to_google(job: JobModel) {
                                 }
                             }
                         }
+                        progress_pub(&job.user_id, &job.id, JobStage::Started, "Job Started", 0)
+                            .await;
                         let quota = QuotaEntity::find()
                             .filter(QuotaColumn::UserId.eq(job.user_id.clone()))
                             .one(db)
                             .await;
                         match quota {
                             Err(_err) => {
+                                progress_pub(
+                                    &job.user_id,
+                                    &job.id,
+                                    JobStage::Failed,
+                                    "DB Error, Restarting...",
+                                    0,
+                                )
+                                .await;
                                 let (remove_processing, add_copy) = (
                                     redis_conn.lrem("processing", 1, job.id.to_string()).await,
                                     redis_conn.lpush("copy:job", job.id.to_string()).await,
@@ -92,10 +104,14 @@ pub async fn copy_google_to_google(job: JobModel) {
                                         Ok(_) => return,
                                         Err(err) => {
                                             eprintln!("error rempving from processing: {err:?}");
-                                            let mut edit_job: JobActive = job.into();
+                                            let mut edit_job: JobActive = job.clone().into();
                                             edit_job.status = Set(Status::Failed);
-                                            edit_job.fail_reason = Set(Some(String::from("Error Getting quota")));
-                                            edit_job.update(db).await.ok();
+                                            edit_job.fail_reason =
+                                                Set(Some(String::from("Error Getting quota")));
+                                            let (_, _) = tokio::join!(
+                                                edit_job.update(db),       
+                                                progress_pub(&job.user_id, &job.id, JobStage::Failed, "Failed...", 0)
+                                            );
                                             return;
                                         }
                                     }
@@ -115,6 +131,14 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                         .lpush("copy:job", job.id.to_string())
                                                         .await,
                                                 );
+                                                progress_pub(
+                                                    &job.user_id,
+                                                    &job.id,
+                                                    JobStage::Failed,
+                                                    "DB Error, Restarting...",
+                                                    0,
+                                                )
+                                                .await;
                                                 return;
                                             }
                                             Ok(_) => {
@@ -148,7 +172,14 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                     "Error Decrypting your access token from source account please try refreshing your account",
                                                                 ),
                                                             ));
-                                                            edit_job.update(db).await.ok();
+                                                            let (_, _) = tokio::join!(edit_job.update(db),progress_pub(
+                                                                &job.user_id,
+                                                                &job.id,
+                                                                JobStage::Failed,
+                                                                "Failed...",
+                                                                0,
+                                                            )
+                                                            );
                                                             let mut edit_cloud: CloudAccountActive =
                                                                 acc.into();
                                                             edit_cloud.token_expired = Set(true);
@@ -169,15 +200,23 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                         job.clone().into();
                                                                     edit_job.fail_reason =
                                                                         Set(Some(err));
-                                                                    edit_job.update(db).await.ok();
+                                                                    let(_, _, _) = tokio::join!(edit_job.update(db),
                                                                     redis_conn
                                                                         .lrem(
                                                                             "processing",
                                                                             1,
                                                                             job.id.to_string(),
                                                                         )
-                                                                        .await
-                                                                        .ok();
+                                                                        ,
+                                                                        progress_pub(
+                                                                            &job.user_id,
+                                                                            &job.id,
+                                                                            JobStage::Failed,
+                                                                            "Failed...",
+                                                                            0,
+                                                                        )
+                                                                        );
+                                                                    
                                                                 }
                                                                 Ok(_) => {
                                                                     let destination_acc = CloudAccountEntity::find()
@@ -203,11 +242,16 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                     .fail_reason =
                                                                                     Set(Some(err));
                                                                                 edit_job.status = Set(Status::Failed);
-                                                                                edit_job
-                                                                                    .update(db)
-                                                                                    .await
-                                                                                    .ok();
-                                                                                redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
+                                                                                let (_, _, _) = tokio::join!(edit_job.update(db),
+                                                                                redis_conn.lrem("processing", 1, job.id.to_string()),
+                                                                                progress_pub(
+                                                                                    &job.user_id,
+                                                                                    &job.id,
+                                                                                    JobStage::Failed,
+                                                                                    "Failed...",
+                                                                                    0,
+                                                                                )
+                                                                                );
                                                                             }
                                                                             Ok(_) => (),
                                                                         };
@@ -219,32 +263,26 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                     "error decrypting token: {:?}",
                                                                                     err
                                                                                 );
-                                                                                redis_conn
-                                                                                    .lrem(
-                                                                                        "processing",
-                                                                                        1,
-                                                                                        job.id.to_string(),
-                                                                                    )
-                                                                                    .await
-                                                                                    .ok();
                                                                                 let mut edit_job: JobActive =
                                                                                     job.clone().into();
                                                                                 edit_job.status = Set(Status::Failed);
                                                                                 edit_job.fail_reason = Set(Some(String::from("Error Decrypting your access token from destination account please try refreshing your account")));
-                                                                                edit_job
-                                                                                    .update(db)
-                                                                                    .await
-                                                                                    .ok();
                                                                                 let mut edit_cloud: CloudAccountActive =
                                                                                     dest_acc.into();
                                                                                 edit_cloud.token_expired = Set(true);
-                                                                                edit_cloud
-                                                                                    .update(db)
-                                                                                    .await
-                                                                                    .ok();
+                                                                                let (_, _, _, _) = tokio::join!(
+                                                                                    redis_conn.lrem(
+                                                                                        "processing",
+                                                                                        1,
+                                                                                        job.id.to_string(),
+                                                                                    ),
+                                                                                    edit_job.update(db),
+                                                                                    edit_cloud.update(db),
+                                                                                    progress_pub(&job.user_id, &job.id, JobStage::Failed, "Failed...", 0)                                                                                    
+                                                                                );
+                                                                                
                                                                             }
                                                                             Ok(dest_token) => {
-                                                                                
                                                                                 match copy_file(&dest_token, from_file_id, &job.to_folder_id, &job.id).await {
                                                                                     Err(err) => {
                                                                                         let mut edit_job: JobActive = job.clone().into();
@@ -252,7 +290,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                         edit_job.fail_reason = Set(Some(err));
                                                                                         edit_job.update(db).await.ok();
                                                                                         redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
-                                                                                        
+
                                                                                     }
                                                                                     Ok(ids) => {
                                                                                         remove_permission(ids, from_file_id, &token, &job.id).await;
@@ -269,7 +307,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                             edit_quota.free_quota = Set(edit_free_quota);
                                                                                             edit_quota.update(db).await.ok();
                                                                                         }
-                                                                                        
+
                                                                                     }
                                                                                 };
                                                                             }
