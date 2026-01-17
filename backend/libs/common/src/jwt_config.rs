@@ -9,11 +9,10 @@ use uuid::Uuid;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub id: Uuid,
-    pub quota_type: String,
     pub exp: i64,
 }
 
-pub fn create_jwt(id: &str, quota_type: &str) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn create_jwt(id: &str) -> Result<String, jsonwebtoken::errors::Error> {
     let timestamp = Utc::now() + Duration::days(7);
     let expiration = timestamp.timestamp();
     let uuid = match Uuid::parse_str(id) {
@@ -22,7 +21,6 @@ pub fn create_jwt(id: &str, quota_type: &str) -> Result<String, jsonwebtoken::er
     };
     let claims = Claims {
         id: uuid,
-        quota_type: quota_type.to_owned(),
         exp: expiration,
     };
 

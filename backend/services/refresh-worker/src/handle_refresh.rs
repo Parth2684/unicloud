@@ -21,8 +21,6 @@ pub struct GoogleResponse {
     pub access_token: String,
     pub expires_in: i64,
     pub refresh_token: Option<String>,
-    pub scope: String,
-    pub token_type: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -32,7 +30,7 @@ pub struct GoogleError {
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(untagged)] // <-- IMPORTANT
+#[serde(untagged)]
 pub enum GoogleResult {
     Ok(GoogleResponse),
     Err(GoogleError),

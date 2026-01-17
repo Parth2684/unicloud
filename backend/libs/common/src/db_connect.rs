@@ -3,7 +3,7 @@ use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::time::Duration;
 use tokio::sync::OnceCell;
 
-pub static DB: OnceCell<DatabaseConnection> = OnceCell::const_new();
+static DB: OnceCell<DatabaseConnection> = OnceCell::const_new();
 
 pub async fn init_db() -> &'static DatabaseConnection {
     DB.get_or_init(|| async {

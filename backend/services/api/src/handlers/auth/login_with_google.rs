@@ -7,10 +7,8 @@ use chrono::prelude::*;
 use common::db_connect::init_db;
 use common::export_envs::ENVS;
 use common::jwt_config::{create_jwt, decode_jwt};
-use entities::quota::{Column as QuotaColumn, Entity as QuotaEntity};
-use entities::sea_orm_active_enums::QuotaType;
 use entities::users::{Column as UserColumn, Entity as UserEntity};
-use entities::{cloud_account, quota, users};
+use entities::{cloud_account, users};
 use reqwest::Client;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter};
@@ -240,50 +238,8 @@ pub async fn google_auth_callback(
         }
     };
 
-    let user_quota = QuotaEntity::find()
-        .filter(QuotaColumn::UserId.eq(final_user.id))
-        .one(db)
-        .await;
 
-    let user_quota: quota::Model = match user_quota {
-        Ok(optional_quota) => match optional_quota {
-            Some(quota) => quota,
-            None => {
-                let uuid = Uuid::new_v4();
-                let quota_db = quota::ActiveModel {
-                    id: Set(uuid),
-                    user_id: Set(final_user.id),
-                    ..Default::default()
-                };
-                let quota: quota::Model = match quota_db.insert(db).await {
-                    Ok(quota) => quota,
-                    Err(err) => {
-                        eprintln!("{err:?}");
-                        return Err(AppError::Internal(Some(String::from(
-                            "Could not create Quota for user",
-                        ))));
-                    }
-                };
-                quota
-            }
-        },
-        Err(err) => {
-            eprintln!("{err:?}");
-            return Err(AppError::Internal(Some(String::from(
-                "Could not create a quota for you please try creating account again DBERR",
-            ))));
-        }
-    };
-
-    let quota_type = match user_quota.quota_type {
-        QuotaType::Free => "Free",
-        QuotaType::Bronze => "Bronze",
-        QuotaType::Silver => "Silver",
-        QuotaType::Gold => "Gold",
-        QuotaType::Platinum => "Platinum",
-    };
-
-    let token = match create_jwt(&final_user.id.to_string(), quota_type) {
+    let token = match create_jwt(&final_user.id.to_string()) {
         Ok(token) => token,
         Err(err) => {
             eprintln!("{:?}", err);

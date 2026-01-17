@@ -5,7 +5,7 @@ use entities::job::{Column as JobColumn, Entity as JobEntity};
 use redis::AsyncTypedCommands;
 use tokio::{sync::Semaphore, task};
 
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
 use crate::job::process_job;
 mod handlers;

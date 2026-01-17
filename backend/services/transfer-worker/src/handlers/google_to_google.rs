@@ -1,5 +1,6 @@
 use common::{
-    db_connect::init_db, encrypt::decrypt, enums::JobStage, redis_connection::init_redis,
+    db_connect::init_db, encrypt::decrypt, enums::JobStage, jwt_config::create_jwt,
+    redis_connection::init_redis,
 };
 use entities::{
     cloud_account::{
@@ -22,7 +23,10 @@ use crate::helpers::{
 
 pub async fn copy_google_to_google(job: JobModel) {
     let (db, mut redis_conn) = tokio::join!(init_db(), init_redis());
-    refresh_clouds(&job.claims).await;
+    let jwt = create_jwt(&job.user_id.to_string()).ok();
+    if let Some(token) = jwt {
+        refresh_clouds(&token).await;
+    }
     if let (Some(from_drive), Some(from_file_id), Some(is_folder)) =
         (&job.from_drive, &job.from_file_id, &job.is_folder)
     {
@@ -74,6 +78,8 @@ pub async fn copy_google_to_google(job: JobModel) {
                             .filter(QuotaColumn::UserId.eq(job.user_id.clone()))
                             .one(db)
                             .await;
+                        // hithere is a damn word be away from it as much as possible
+                        // what u say 
                         match quota {
                             Err(_err) => {
                                 progress_pub(
@@ -328,7 +334,10 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                             edit_quota.free_quota = Set(edit_free_quota);
                                                                                             edit_quota.update(db).await.ok();
                                                                                         }
-                                                                                        progress_pub(&job.user_id, &job.id, JobStage::Completed, "Completed The Job Successfully", 100).await;
+                                                                                        let mut edit_job: JobActive = job.clone().into();
+                                                                                        edit_job.fail_reason = Set(None);
+                                                                                        edit_job.status = Set(Status::Completed);
+                                                                                        let (_, _) = tokio::join!(progress_pub(&job.user_id, &job.id, JobStage::Completed, "Completed The Job Successfully", 100), edit_job.update(db));
                                                                                     }
                                                                                 };
                                                                             }

@@ -4645,9 +4645,13 @@ name = "ws"
 version = "0.1.0"
 dependencies = [
  "common",
+ "entities",
  "futures-channel",
  "futures-util",
+ "once_cell",
  "redis",
+ "sea-orm",
+ "serde_json",
  "tokio",
  "tokio-tungstenite",
  "url",

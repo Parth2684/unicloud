@@ -1,28 +1,35 @@
-use crate::handlers::ws_handle::{PeerMap, accept_connection};
-use common::redis_connection::init_redis;
+use crate::handlers::{helpers::subscriber::{JobBus, listen}, ws_handle::{accept_connection}};
+use common::{db_connect::init_db, redis_connection::init_redis};
+use once_cell::sync::Lazy;
 use std::{
     collections::HashMap,
     fmt::Error,
-    sync::{Arc, Mutex},
+    sync::{Arc},
 };
-use tokio::net::TcpListener;
+use tokio::{net::TcpListener, sync::Mutex as TokioMutex};
 
 mod handlers;
+
+pub static JOB_BUS: Lazy<JobBus> = Lazy::new(|| {
+    Arc::new(TokioMutex::new(HashMap::new()))
+});
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let addr = String::from("0.0.0.0:8080");
-    let state = PeerMap::new(Mutex::new(HashMap::new()));
     let try_socket = TcpListener::bind(&addr).await;
     let listner = try_socket.expect("Failed to bind");
     println!("Listeneing on {:?}", addr);
     let manager = init_redis().await;
     let redis = Arc::new(manager);
-
-    while let Ok((stream, addr)) = listner.accept().await {
+    let db = init_db().await;
+    
+    
+    tokio::spawn(listen(JOB_BUS.clone()));
+    
+    while let Ok((stream, _)) = listner.accept().await {
         let conn = Arc::clone(&redis);
-
-        tokio::spawn(accept_connection(stream, state.clone(), addr, conn));
+        tokio::spawn(accept_connection(stream, conn, db));
     }
     Ok(())
 }

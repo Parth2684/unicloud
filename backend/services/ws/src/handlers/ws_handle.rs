@@ -1,30 +1,34 @@
 use common::jwt_config::decode_jwt;
-use futures_channel::mpsc::{UnboundedSender, unbounded};
+use futures_channel::mpsc::{unbounded};
 use futures_util::{SinkExt, StreamExt};
 use redis::{AsyncTypedCommands, aio::ConnectionManager};
+
+use entities::{
+    job::{Column as JobColumn, Entity as JobEntity},
+    sea_orm_active_enums::Status,
+};
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use std::{
     collections::HashMap,
-    net::SocketAddr,
     sync::{Arc, Mutex},
 };
 use tokio::net::TcpStream;
 use tokio_tungstenite::{
     accept_hdr_async,
     tungstenite::{
-        Message, Utf8Bytes,
+        Message,
         handshake::server::{Request, Response},
     },
 };
 use url::Url;
 
-type Tx = UnboundedSender<Message>;
-pub type PeerMap = Arc<Mutex<HashMap<SocketAddr, Tx>>>;
+use crate::{JOB_BUS, handlers::helpers::subscriber::subscribe_job};
+
 
 pub async fn accept_connection(
     stream: TcpStream,
-    peer_map: PeerMap,
-    addr: SocketAddr,
     mut conn: Arc<ConnectionManager>,
+    db: &DatabaseConnection,
 ) {
     let request_url = Arc::new(Mutex::new(None::<Url>));
     let url_store = request_url.clone();
@@ -88,34 +92,33 @@ pub async fn accept_connection(
                 None => return,
                 Some(tok) => tok.to_owned(),
             };
-
-            let (tx, _rx) = unbounded();
-            match peer_map.lock() {
-                Ok(mut peers) => {
-                    peers.insert(addr, tx);
-                }
-                Err(err) => {
-                    eprintln!("{err:?}");
-                    return;
-                }
-            }
+            
 
             let (mut sender, mut receiver) = ws_stream.split();
+            let (ws_tx, mut ws_rx) = unbounded::<Message>();
 
-            while let Some(msg) = receiver.next().await {
-                let claims = match decode_jwt(&token) {
-                    Ok(claim) => claim,
-                    Err(err) => {
-                        eprintln!("error decoding jwt: {}", err);
-                        sender
-                            .send(Message::Text(Utf8Bytes::from(String::from(
-                                "Error Validating User from the websocket server",
-                            ))))
-                            .await
-                            .ok();
+            tokio::spawn(async move {
+                while let Some(msg) = ws_rx.next().await {
+                    if sender.send(msg).await.is_err() {
                         break;
                     }
-                };
+                }
+            });
+
+            let claims = match decode_jwt(&token) {
+                Ok(claim) => claim,
+                Err(err) => {
+                    eprintln!("error decoding jwt: {}", err);
+                    // sender
+                    //     .send(Message::Text(Utf8Bytes::from(String::from(
+                    //         "Error Validating User from the websocket server",
+                    //     ))))
+                    //     .await
+                    //     .ok();
+                    return;
+                }
+            };
+            while let Some(msg) = receiver.next().await {
                 let msg = match msg {
                     Ok(m) => m,
                     Err(e) => {
@@ -123,37 +126,28 @@ pub async fn accept_connection(
                         break;
                     }
                 };
+
                 if msg.is_text() {
                     let text = msg.to_text();
                     let text = match text {
                         Ok(str) => str.to_owned(),
                         Err(err) => {
-                            sender
-                                .send(Message::Text(Utf8Bytes::from(format!("Server got {err}"))))
-                                .await
-                                .ok();
+                            // sender
+                            //     .send(Message::Text(Utf8Bytes::from(format!("Server got {err}"))))
+                            //     .await
+                            //     .ok();
+                            eprintln!("{err:?}");
                             break;
                         }
                     };
                     if text == String::from("Refresh Token") {
                         let redis_clone = Arc::make_mut(&mut conn);
-                        // let added: Result<bool, redis::RedisError> = redis::cmd("HSETNX")
-                        //     .arg("dedupe:queue")
-                        //     .arg("userid")
-                        //     .arg(claims.id.to_string())
-                        //     .query_async(redis_clone)
-                        //     .await;
                         let added = redis_clone
                             .hset_nx("dedupe:queue", claims.id.to_string(), "1")
                             .await;
                         match added {
                             Ok(add) => {
                                 if add {
-                                    // let _: Result<isize, redis::RedisError> = redis::cmd("LPUSH")
-                                    //     .arg("refreshtoken:queue")
-                                    //     .arg(claims.id.to_string())
-                                    //     .query_async(redis_clone)
-                                    //     .await;
                                     let _ = redis_clone
                                         .lpush("refresh:queue", claims.id.to_string())
                                         .await;
@@ -165,15 +159,56 @@ pub async fn accept_connection(
                             }
                         }
                     }
+                    if text == String::from("Transfer Status") {
+                        let running_jobs = JobEntity::find()
+                            .filter(JobColumn::UserId.eq(claims.id))
+                            .filter(JobColumn::Status.eq(Status::Running))
+                            .all(db)
+                            .await;
+                        if let Ok(jobs) = running_jobs {
+                            let jobs: Vec<String> =
+                                jobs.iter().map(|job| job.id.to_string()).collect();
+                            for job in jobs {
+                                let ws_tx_clone = ws_tx.clone();
+                                tokio::spawn(async move {
+                                    let mut rx = subscribe_job(&JOB_BUS, &job).await;
+                                    while let Ok(msg) = rx.recv().await {
+                                        match serde_json::from_str::<serde_json::Value>(&msg).ok() {
+                                            None => (),
+                                            Some(val) => {
+                                                if val.get("type")
+                                                    == Some(&serde_json::Value::String(
+                                                        String::from("completed"),
+                                                    ))
+                                                {
+                                                    let _ = ws_tx_clone
+                                                        .unbounded_send(Message::Text(msg.into()));
+                                                    let mut job = JOB_BUS.lock().await;
+                                                    job.remove(
+                                                        val.get("id").unwrap().as_str().unwrap(),
+                                                    );
+                                                } else if ws_tx_clone
+                                                    .unbounded_send(Message::Text(msg.into()))
+                                                    .is_err()
+                                                {
+                                                    break;
+                                                }
+                                            }
+                                        };
+                                    }
+                                });
+                            }
+                        }
+                    }
                 }
             }
-            match peer_map.lock() {
-                Ok(mut peer) => peer.remove(&addr),
-                Err(err) => {
-                    eprintln!("{err:?}");
-                    return;
-                }
-            };
+            // match peer_map.lock() {
+            //     Ok(mut peer) => peer.remove(&addr),
+            //     Err(err) => {
+            //         eprintln!("{err:?}");
+            //         return;
+            //     }
+            // };
         }
     }
 }
