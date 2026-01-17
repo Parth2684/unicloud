@@ -238,7 +238,6 @@ pub async fn google_auth_callback(
         }
     };
 
-
     let token = match create_jwt(&final_user.id.to_string()) {
         Ok(token) => token,
         Err(err) => {

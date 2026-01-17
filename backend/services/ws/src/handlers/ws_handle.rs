@@ -1,5 +1,5 @@
 use common::jwt_config::decode_jwt;
-use futures_channel::mpsc::{unbounded};
+use futures_channel::mpsc::unbounded;
 use futures_util::{SinkExt, StreamExt};
 use redis::{AsyncTypedCommands, aio::ConnectionManager};
 
@@ -23,7 +23,6 @@ use tokio_tungstenite::{
 use url::Url;
 
 use crate::{JOB_BUS, handlers::helpers::subscriber::subscribe_job};
-
 
 pub async fn accept_connection(
     stream: TcpStream,
@@ -92,7 +91,6 @@ pub async fn accept_connection(
                 None => return,
                 Some(tok) => tok.to_owned(),
             };
-            
 
             let (mut sender, mut receiver) = ws_stream.split();
             let (ws_tx, mut ws_rx) = unbounded::<Message>();

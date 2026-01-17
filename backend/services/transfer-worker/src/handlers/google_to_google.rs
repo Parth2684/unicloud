@@ -79,7 +79,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                             .one(db)
                             .await;
                         // hithere is a damn word be away from it as much as possible
-                        // what u say 
+                        // what u say
                         match quota {
                             Err(_err) => {
                                 progress_pub(
