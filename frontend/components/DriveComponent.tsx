@@ -1,10 +1,11 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useCloudStore } from "../stores/cloud/useCloudStore";
 import { Spinner } from "./ui/spinner";
 import type { DriveFile } from "../stores/cloud/types";
 import { formatBytes, isFolder } from "../utils/format";
+import { useRouter } from 'next/navigation';
 
 type DriveComponentProps = {
   drive_id: string;
@@ -89,13 +90,44 @@ type FileRowProps = {
 };
 
 const FileRow = ({ driveId, item }: FileRowProps) => {
+  const router = useRouter();
   const folder = isFolder(item.mimeType);
-  const sizeLabel = !folder && item.size != null ? formatBytes(item.size.toString()) : "--";
-  const modifiedDate = item.modifiedTime || item.createdTime;
-  const modifiedLabel = modifiedDate ? new Date(modifiedDate).toLocaleDateString() : "--";
 
-  const rowContent = (
-    <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-2 px-4 py-2 text-sm text-zinc-800 hover:bg-zinc-50 dark:text-zinc-100 dark:hover:bg-zinc-800/60">
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const sizeLabel =
+    !folder && item.size != null ? formatBytes(item.size.toString()) : "--";
+
+  const modifiedDate = item.modifiedTime || item.createdTime;
+  const modifiedLabel = modifiedDate
+    ? new Date(modifiedDate).toLocaleDateString()
+    : "--";
+
+  
+  // close menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div
+      onClick={() => {
+        if (folder) {
+          router.push(`/drive/${driveId}/${item.id}`);
+        }
+      }}
+      className="relative grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_auto]
+        items-center gap-2 px-4 py-2 text-sm text-zinc-800
+        hover:bg-zinc-50 dark:text-zinc-100 dark:hover:bg-zinc-800/60"
+    >
+      {/* name */}
       <div className="flex items-center gap-2 truncate">
         <div
           className={`flex h-6 w-6 items-center justify-center rounded ${
@@ -108,22 +140,66 @@ const FileRow = ({ driveId, item }: FileRowProps) => {
         </div>
         <span className="truncate">{item.name}</span>
       </div>
+
+      {/* size */}
       <div className="text-right text-xs text-zinc-500 sm:text-left sm:pl-4 dark:text-zinc-400">
         {sizeLabel}
       </div>
+
+      {/* modified */}
       <div className="hidden text-right text-xs text-zinc-500 sm:block dark:text-zinc-400">
         {modifiedLabel}
       </div>
+
+      {/* three dots */}
+      <div ref={menuRef} className="relative">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen((v) => !v);
+          }}
+          className="rounded p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+        >
+          ⋮
+        </button>
+
+        {open && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="absolute right-0 z-50 mt-2 w-36 rounded-md border
+              bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+          >
+            <MenuItem onClick={() => console.log("copy", item)}>
+              Copy
+            </MenuItem>
+            <MenuItem onClick={() => console.log("move", item)}>
+              Move
+            </MenuItem>
+            <MenuItem danger onClick={() => console.log("delete", item)}>
+              Delete
+            </MenuItem>
+          </div>
+        )}
+      </div>
     </div>
   );
-
-  if (folder) {
-    return (
-      <Link href={`/drive/${driveId}/${item.id}`} className="block">
-        {rowContent}
-      </Link>
-    );
-  }
-
-  return rowContent;
 };
+
+const MenuItem = ({
+  children,
+  onClick,
+  danger,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+}) => (
+  <button
+    onClick={onClick}
+    className={`w-full px-3 py-2 text-left text-sm
+      hover:bg-zinc-100 dark:hover:bg-zinc-800
+      ${danger ? "text-red-500" : ""}`}
+  >
+    {children}
+  </button>
+);

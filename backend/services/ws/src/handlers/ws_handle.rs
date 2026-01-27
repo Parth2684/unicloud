@@ -1,4 +1,4 @@
-use common::jwt_config::decode_jwt;
+use common::{jwt_config::decode_jwt};
 use futures_channel::mpsc::unbounded;
 use futures_util::{SinkExt, StreamExt};
 use redis::{AsyncTypedCommands, aio::ConnectionManager};
@@ -174,22 +174,27 @@ pub async fn accept_connection(
                                         match serde_json::from_str::<serde_json::Value>(&msg).ok() {
                                             None => (),
                                             Some(val) => {
-                                                if val.get("type")
-                                                    == Some(&serde_json::Value::String(
-                                                        String::from("completed"),
-                                                    ))
+                                                if ws_tx_clone
+                                                    .unbounded_send(Message::Text(msg.into()))
+                                                    .is_err()
                                                 {
-                                                    let _ = ws_tx_clone
-                                                        .unbounded_send(Message::Text(msg.into()));
+                                                    println!("closing websocket");
+                                                    break;
+                                                };
+                                                if val.get("stage")
+                                                    == Some(&serde_json::Value::String(
+                                                        String::from("Completed"),
+                                                    ))
+                                                    || val.get("stage")
+                                                        == Some(&serde_json::Value::String(
+                                                            String::from("Failed"),
+                                                        ))
+                                                {
                                                     let mut job = JOB_BUS.lock().await;
                                                     job.remove(
                                                         val.get("id").unwrap().as_str().unwrap(),
                                                     );
-                                                } else if ws_tx_clone
-                                                    .unbounded_send(Message::Text(msg.into()))
-                                                    .is_err()
-                                                {
-                                                    break;
+                                                    println!("job unsubscribed")
                                                 }
                                             }
                                         };
