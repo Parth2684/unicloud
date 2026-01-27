@@ -1,8 +1,5 @@
 export const formatBytes = (storage: string | number): string => {
-  const bytes =
-    typeof storage === "number"
-      ? storage
-      : Number(storage);
+  const bytes = typeof storage === "number" ? storage : Number(storage);
 
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
 
@@ -15,10 +12,9 @@ export const formatBytes = (storage: string | number): string => {
   return `${value.toFixed(value >= 10 ? 0 : 2)} ${sizes[i]}`;
 };
 
-
 export const getUsagePercentage = (
   usage: string | number,
-  limit: string | number | null
+  limit: string | number | null,
 ): number => {
   if (limit == null) return 0;
 
@@ -31,7 +27,6 @@ export const getUsagePercentage = (
 
   return Math.min((used / max) * 100, 100);
 };
-
 
 export const isFolder = (mimeType: string): boolean => {
   return mimeType === "application/vnd.google-apps.folder";

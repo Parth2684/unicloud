@@ -5,7 +5,7 @@ import { useCloudStore } from "../stores/cloud/useCloudStore";
 import { Spinner } from "./ui/spinner";
 import type { DriveFile } from "../stores/cloud/types";
 import { formatBytes, isFolder } from "../utils/format";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 
 type DriveComponentProps = {
   drive_id: string;
@@ -96,15 +96,11 @@ const FileRow = ({ driveId, item }: FileRowProps) => {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const sizeLabel =
-    !folder && item.size != null ? formatBytes(item.size.toString()) : "--";
+  const sizeLabel = !folder && item.size != null ? formatBytes(item.size.toString()) : "--";
 
   const modifiedDate = item.modifiedTime || item.createdTime;
-  const modifiedLabel = modifiedDate
-    ? new Date(modifiedDate).toLocaleDateString()
-    : "--";
+  const modifiedLabel = modifiedDate ? new Date(modifiedDate).toLocaleDateString() : "--";
 
-  
   // close menu on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -123,12 +119,12 @@ const FileRow = ({ driveId, item }: FileRowProps) => {
           router.push(`/drive/${driveId}/${item.id}`);
         }
       }}
-      className="relative grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_auto]
+      className={`relative grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_auto]
         items-center gap-2 px-4 py-2 text-sm text-zinc-800
-        hover:bg-zinc-50 dark:text-zinc-100 dark:hover:bg-zinc-800/60"
+        hover:bg-zinc-50 dark:text-zinc-100 dark:hover:bg-zinc-800/60 ${folder ? "cursor-pointer" : "cursor-not-allowed"} `}
     >
       {/* name */}
-      <div className="flex items-center gap-2 truncate">
+      <div className={`flex items-center gap-2 truncate`}>
         <div
           className={`flex h-6 w-6 items-center justify-center rounded ${
             folder
@@ -138,7 +134,7 @@ const FileRow = ({ driveId, item }: FileRowProps) => {
         >
           <span className="text-xs font-semibold">{folder ? "F" : "•"}</span>
         </div>
-        <span className="truncate">{item.name}</span>
+        <span className={`truncate`}>{item.name}</span>
       </div>
 
       {/* size */}
@@ -169,12 +165,8 @@ const FileRow = ({ driveId, item }: FileRowProps) => {
             className="absolute right-0 z-50 mt-2 w-36 rounded-md border
               bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
           >
-            <MenuItem onClick={() => console.log("copy", item)}>
-              Copy
-            </MenuItem>
-            <MenuItem onClick={() => console.log("move", item)}>
-              Move
-            </MenuItem>
+            <MenuItem onClick={() => console.log("copy", item)}>Copy</MenuItem>
+            <MenuItem onClick={() => console.log("move", item)}>Move</MenuItem>
             <MenuItem danger onClick={() => console.log("delete", item)}>
               Delete
             </MenuItem>

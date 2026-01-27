@@ -1,4 +1,4 @@
-use common::{jwt_config::decode_jwt};
+use common::jwt_config::decode_jwt;
 use futures_channel::mpsc::unbounded;
 use futures_util::{SinkExt, StreamExt};
 use redis::{AsyncTypedCommands, aio::ConnectionManager};
