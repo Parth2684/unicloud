@@ -36,16 +36,28 @@ export interface SharedDrive {
   name: string;
 }
 
+export interface ClipboardItem {
+  id: string;
+  name: string;
+  drive_id: string,
+  operation: "copy" | "move" 
+}
+
 export type CloudState = {
   loading: boolean;
   successCloudAccounts: SuccessCloudAccount[] | null;
   errorCloudAccounts: ErrorCloudAccount[] | null;
   drive: DriveFile[] | null;
   sharedDrives: SharedDrive[] | null;
+  clipboard: ClipboardItem | null
 };
 
 export type CloudActions = {
   setClouds: () => Promise<void>;
   setCurrentGoogleFolder: (drive_id: string, folder_id?: string) => Promise<void>;
   setSharedDrives: (drive_id: string) => Promise<void>;
+  setClipboard: (id: string, name: string, drive_id: string, operation: "copy" | "move") => void;
+  clearClipboard: () => void;
 };
+
+

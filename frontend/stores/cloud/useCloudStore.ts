@@ -10,6 +10,7 @@ export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
   errorCloudAccounts: null,
   drive: null,
   sharedDrives: null,
+  clipboard: null,
 
   setClouds: async () => {
     set({ loading: true });
@@ -57,7 +58,7 @@ export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
   setSharedDrives: async (drive_id: string) => {
     set({ loading: true });
     try {
-      const res = await axiosInstance.get(`google/shared_drive/${drive_id}`);
+      const res = await axiosInstance.get(`/cloud/google/shared_drive/${drive_id}`);
       set({ sharedDrives: res.data.drives });
     } catch (error) {
       console.error(error);
@@ -68,4 +69,11 @@ export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
       set({ loading: false });
     }
   },
+
+  setClipboard: (id: string, name: string, drive_id: string, operation: "copy" | "move") => {
+    set({ clipboard: { id, name, drive_id, operation } });
+  },
+  clearClipboard: () => set({ clipboard: null }),
+  
+  
 }));

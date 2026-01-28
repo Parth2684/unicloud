@@ -13,7 +13,7 @@ type DriveComponentProps = {
 };
 
 export const DriveComponent = ({ drive_id, folder_id }: DriveComponentProps) => {
-  const { setCurrentGoogleFolder, drive, loading } = useCloudStore();
+  const { setCurrentGoogleFolder, drive, loading, clipboard, clearClipboard } = useCloudStore();
 
   useEffect(() => {
     setCurrentGoogleFolder(drive_id, folder_id);
@@ -42,6 +42,18 @@ export const DriveComponent = ({ drive_id, folder_id }: DriveComponentProps) => 
           </Link>
           {folder_id && <span className="text-zinc-400">/</span>}
           {folder_id && <span className="truncate">Current folder</span>}
+          {clipboard && (
+            <button
+              onClick={async () => {
+                await pasteHere();
+                clearClipboard();
+              }}
+              className="rounded bg-sky-600 px-3 py-1 text-white hover:bg-sky-700"
+            >
+              Paste
+            </button>
+          )}
+
         </div>
       </div>
 
@@ -100,6 +112,7 @@ const FileRow = ({ driveId, item }: FileRowProps) => {
 
   const modifiedDate = item.modifiedTime || item.createdTime;
   const modifiedLabel = modifiedDate ? new Date(modifiedDate).toLocaleDateString() : "--";
+  const { setClipboard } = useCloudStore();
 
   // close menu on outside click
   useEffect(() => {
@@ -165,8 +178,12 @@ const FileRow = ({ driveId, item }: FileRowProps) => {
             className="absolute right-0 z-50 mt-2 w-36 rounded-md border
               bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
           >
-            <MenuItem onClick={() => console.log("copy", item)}>Copy</MenuItem>
-            <MenuItem onClick={() => console.log("move", item)}>Move</MenuItem>
+            <MenuItem onClick={() => setClipboard(item.id, item.name, driveId, "copy")}>
+              Copy
+            </MenuItem>
+            <MenuItem onClick={() => setClipboard(item.id, item.name, driveId, "move")}>
+              Move
+            </MenuItem>
             <MenuItem danger onClick={() => console.log("delete", item)}>
               Delete
             </MenuItem>
