@@ -9,7 +9,7 @@ use entities::{
     },
     job::{ActiveModel as JobActive, Column as JobColumn, Entity as JobEntity, Model as JobModel},
     quota::{ActiveModel as QuotaActive, Column as QuotaColumn, Entity as QuotaEntity},
-    sea_orm_active_enums::Status,
+    sea_orm_active_enums::{Status},
 };
 use redis::AsyncTypedCommands;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
@@ -23,6 +23,12 @@ use crate::helpers::{
 
 pub async fn copy_google_to_google(job: JobModel) {
     let (db, mut redis_conn) = tokio::join!(init_db(), init_redis());
+    if &job.status != &Status::Pending {
+        redis_conn
+            .lrem("processing", 1, job.id.to_string())
+            .await
+            .ok();
+    }
     let jwt = create_jwt(&job.user_id.to_string()).ok();
     if let Some(token) = jwt {
         refresh_clouds(&token).await;
@@ -30,9 +36,11 @@ pub async fn copy_google_to_google(job: JobModel) {
     if let (Some(from_drive), Some(from_file_id), Some(is_folder)) =
         (&job.from_drive, &job.from_file_id, &job.is_folder)
     {
+    println!("1");
         if !is_folder {
             match job.size {
                 None => {
+                    eprintln!("size not found");
                     let job_edit = JobEntity::find()
                         .filter(JobColumn::Id.eq(job.id.clone()))
                         .one(db)
@@ -58,6 +66,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                     if let Ok(jobs) = all_jobs {
                         for j in jobs {
                             if j.status == Status::Running {
+                                println!("runnuing job found {:?}", j.id);
                                 let (remove_processing, add_copy) = (
                                     redis_conn.lrem("processing", 1, job.id.to_string()).await,
                                     redis_conn.lpush("copy:job", job.id.to_string()).await,
@@ -81,7 +90,8 @@ pub async fn copy_google_to_google(job: JobModel) {
                         // hithere is a damn word be away from it as much as possible
                         // what u say
                         match quota {
-                            Err(_err) => {
+                            Err(err) => {
+                                eprintln!("error getting quota: {err}");
                                 progress_pub(
                                     &job.user_id,
                                     &job.id,
@@ -105,6 +115,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                             }
                             Ok(optional_quota) => match optional_quota {
                                 None => {
+                                    println!("quota not found");
                                     match redis_conn.lrem("processing", 1, job.id.to_string()).await
                                     {
                                         Ok(_) => return,
@@ -211,7 +222,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                             progress_pub(&job.user_id, &job.id, JobStage::Permissions, "Checking Permissions if user can share files directly", 15).await;
                                                             match fetch_permissions(
                                                                 from_file_id,
-                                                                &token,
+                                                                &token
                                                             )
                                                             .await
                                                             {
@@ -223,6 +234,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                         job.clone().into();
                                                                     edit_job.fail_reason =
                                                                         Set(Some(err));
+                                                                    edit_job.status = Set(Status::Failed);
                                                                     let (_, _, _) = tokio::join!(
                                                                         edit_job.update(db),
                                                                         redis_conn.lrem(
@@ -252,6 +264,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                             &token,
                                                                             &from_file_id,
                                                                             &dest_acc.email,
+                                                                            &job.id
                                                                         )
                                                                         .await
                                                                         {
@@ -275,73 +288,75 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                 )
                                                                                 );
                                                                             }
-                                                                            Ok(_) => (),
-                                                                        };
-                                                                        progress_pub(&job.user_id, &job.id, JobStage::Auth, "Decrypting Tokens of destination account", 40).await;
-                                                                        match decrypt(
-                                                                            &dest_acc.access_token,
-                                                                        ) {
-                                                                            Err(err) => {
-                                                                                eprintln!(
-                                                                                    "error decrypting token: {:?}",
-                                                                                    err
-                                                                                );
-                                                                                let mut edit_job: JobActive =
-                                                                                    job.clone().into();
-                                                                                edit_job.status = Set(Status::Failed);
-                                                                                edit_job.fail_reason = Set(Some(String::from("Error Decrypting your access token from destination account please try refreshing your account")));
-                                                                                let mut edit_cloud: CloudAccountActive =
-                                                                                    dest_acc.into();
-                                                                                edit_cloud.token_expired = Set(true);
-                                                                                let (_, _, _, _) = tokio::join!(
-                                                                                    redis_conn.lrem(
-                                                                                        "processing",
-                                                                                        1,
-                                                                                        job.id.to_string(),
-                                                                                    ),
-                                                                                    edit_job.update(db),
-                                                                                    edit_cloud.update(db),
-                                                                                    progress_pub(&job.user_id, &job.id, JobStage::Failed, "Failed...", 0)
-                                                                                );
-                                                                            }
-                                                                            Ok(dest_token) => {
-                                                                                progress_pub(&job.user_id, &job.id, JobStage::Copying, "Copying File to destination", 80).await;
-                                                                                match copy_file(&dest_token, from_file_id, &job.to_folder_id, &job.id).await {
+                                                                            Ok(id) => {
+                                                                                progress_pub(&job.user_id, &job.id, JobStage::Auth, "Decrypting Tokens of destination account", 40).await;
+                                                                                match decrypt(
+                                                                                    &dest_acc.access_token,
+                                                                                ) {
                                                                                     Err(err) => {
-                                                                                        let mut edit_job: JobActive = job.clone().into();
+                                                                                        eprintln!(
+                                                                                            "error decrypting token: {:?}",
+                                                                                            err
+                                                                                        );
+                                                                                        let mut edit_job: JobActive =
+                                                                                            job.clone().into();
                                                                                         edit_job.status = Set(Status::Failed);
-                                                                                        edit_job.fail_reason = Set(Some(err));
-                                                                                        edit_job.update(db).await.ok();
-                                                                                        redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
-
+                                                                                        edit_job.fail_reason = Set(Some(String::from("Error Decrypting your access token from destination account please try refreshing your account")));
+                                                                                        let mut edit_cloud: CloudAccountActive =
+                                                                                            dest_acc.into();
+                                                                                        edit_cloud.token_expired = Set(true);
+                                                                                        let (_, _, _, _) = tokio::join!(
+                                                                                            redis_conn.lrem(
+                                                                                                "processing",
+                                                                                                1,
+                                                                                                job.id.to_string(),
+                                                                                            ),
+                                                                                            edit_job.update(db),
+                                                                                            edit_cloud.update(db),
+                                                                                            progress_pub(&job.user_id, &job.id, JobStage::Failed, "Failed...", 0)
+                                                                                        );
                                                                                     }
-                                                                                    Ok(ids) => {
-                                                                                        progress_pub(&job.user_id, &job.id, JobStage::Finalizing, "Removing permissions of the destination account from the source file", 92).await;
-                                                                                        remove_permission(ids, from_file_id, &token, &job.id).await;
-                                                                                        redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
-                                                                                        let remaining_add_on = &quo.add_on_quota;
-                                                                                        let remaining_overall = &quo.remaining_quota - &size;
-                                                                                        if remaining_add_on >= &size {
-                                                                                            let mut edit_quota: QuotaActive = quo.clone().into();
-                                                                                            edit_quota.add_on_quota = Set(remaining_add_on - size);
-                                                                                            edit_quota.remaining_quota = Set(remaining_overall);
-                                                                                            edit_quota.update(db).await.ok();
-                                                                                        }else {
-                                                                                            let edit_free_quota = &size - remaining_add_on;
-                                                                                            let mut edit_quota: QuotaActive = quo.clone().into();
-                                                                                            edit_quota.remaining_quota = Set(remaining_overall);
-                                                                                            edit_quota.add_on_quota = Set(0);
-                                                                                            edit_quota.free_quota = Set(edit_free_quota);
-                                                                                            edit_quota.update(db).await.ok();
-                                                                                        }
-                                                                                        let mut edit_job: JobActive = job.clone().into();
-                                                                                        edit_job.fail_reason = Set(None);
-                                                                                        edit_job.status = Set(Status::Completed);
-                                                                                        let (_, _) = tokio::join!(progress_pub(&job.user_id, &job.id, JobStage::Completed, "Completed The Job Successfully", 100), edit_job.update(db));
+                                                                                    Ok(dest_token) => {
+                                                                                        progress_pub(&job.user_id, &job.id, JobStage::Copying, "Copying File to destination", 80).await;
+                                                                                        match copy_file(&dest_token, from_file_id, &job.to_folder_id).await {
+                                                                                            Err(err) => {
+                                                                                                let mut edit_job: JobActive = job.clone().into();
+                                                                                                edit_job.status = Set(Status::Failed);
+                                                                                                edit_job.fail_reason = Set(Some(err));
+                                                                                                edit_job.update(db).await.ok();
+                                                                                                redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
+        
+                                                                                            }
+                                                                                            Ok(_) => {
+                                                                                                progress_pub(&job.user_id, &job.id, JobStage::Finalizing, "Removing permissions of the destination account from the source file", 92).await;
+                                                                                                remove_permission(id, from_file_id, &token, &job.id).await;
+                                                                                                redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
+                                                                                                let remaining_add_on = &quo.add_on_quota;
+                                                                                                let remaining_overall = &quo.remaining_quota - &size;
+                                                                                                if remaining_add_on >= &size {
+                                                                                                    let mut edit_quota: QuotaActive = quo.clone().into();
+                                                                                                    edit_quota.add_on_quota = Set(remaining_add_on - size);
+                                                                                                    edit_quota.remaining_quota = Set(remaining_overall);
+                                                                                                    edit_quota.update(db).await.ok();
+                                                                                                }else {
+                                                                                                    let edit_free_quota = &size - remaining_add_on;
+                                                                                                    let mut edit_quota: QuotaActive = quo.clone().into();
+                                                                                                    edit_quota.remaining_quota = Set(remaining_overall);
+                                                                                                    edit_quota.add_on_quota = Set(0);
+                                                                                                    edit_quota.free_quota = Set(edit_free_quota);
+                                                                                                    edit_quota.update(db).await.ok();
+                                                                                                }
+                                                                                                let mut edit_job: JobActive = job.clone().into();
+                                                                                                edit_job.fail_reason = Set(None);
+                                                                                                edit_job.status = Set(Status::Completed);
+                                                                                                let (_, _) = tokio::join!(progress_pub(&job.user_id, &job.id, JobStage::Completed, "Completed The Job Successfully", 100), edit_job.update(db));
+                                                                                            }
+                                                                                        };
                                                                                     }
                                                                                 };
-                                                                            }
+                                                                            },
                                                                         };
+                                                                        
                                                                     }
                                                                 }
                                                             };

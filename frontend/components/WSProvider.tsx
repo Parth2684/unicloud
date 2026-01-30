@@ -17,6 +17,13 @@ export default function WSProvider({ children }: { children: ReactNode }) {
     const ws = getSocket(token);
     if (!ws) return;
     wsRef.current = ws;
+    
+    const handleMessage = (event: MessageEvent) => {
+      console.log("[WS MESSAGE]", event.data);
+    };
+    ws.addEventListener("message", handleMessage);
+    ws.removeEventListener("message", handleMessage);
+
 
     const sendRefresh = () => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {

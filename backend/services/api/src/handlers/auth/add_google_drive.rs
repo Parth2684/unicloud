@@ -237,6 +237,7 @@ pub async fn drive_auth_callback(
                     cloud.provider = Set(entities::sea_orm_active_enums::Provider::Google);
                     cloud.user_id = Set(claims.id);
                     cloud.image = Set(image);
+                    cloud.token_expired = Set(false);
                     let account: CloudAccountModel = match cloud.update(db).await {
                         Ok(acc) => acc,
                         Err(err) => return Err(AppError::Internal(Some(err.to_string()))),
@@ -258,6 +259,7 @@ pub async fn drive_auth_callback(
                         user_id: Set(claims.id),
                         sub: Set(Some(owned_sub)),
                         image: Set(image),
+                        token_expired: Set(false),
                         ..Default::default()
                     };
                     let account: CloudAccountModel = match insert_cloud.insert(db).await {
@@ -271,6 +273,7 @@ pub async fn drive_auth_callback(
                     account
                 }
             };
+            
 
             Ok(Redirect::to(&format!(
                 "{}/home",
@@ -320,6 +323,8 @@ pub async fn drive_auth_callback(
                     cloud.provider = Set(entities::sea_orm_active_enums::Provider::Google);
                     cloud.user_id = Set(claims.id);
                     cloud.image = Set(image);
+                    cloud.token_expired = Set(false);
+
                     match cloud.update(db).await {
                         Ok(_) => Ok(Redirect::to(&format!(
                             "{}/home",
@@ -343,6 +348,7 @@ pub async fn drive_auth_callback(
                         user_id: Set(claims.id),
                         sub: Set(Some(owned_sub)),
                         image: Set(image),
+                        token_expired: Set(false),
                         ..Default::default()
                     };
                     match insert_cloud.insert(db).await {
@@ -361,3 +367,5 @@ pub async fn drive_auth_callback(
         }
     }
 }
+
+

@@ -6,6 +6,7 @@ use redis::AsyncTypedCommands;
 use tokio::{sync::Semaphore, task};
 
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use uuid::Uuid;
 
 use crate::job::process_job;
 mod handlers;
@@ -37,7 +38,8 @@ async fn main() {
             match id {
                 None => continue,
                 Some(id) => {
-                    let job = JobEntity::find().filter(JobColumn::Id.eq(id)).one(db).await;
+                    let job_id= Uuid::parse_str(&id).unwrap();
+                    let job = JobEntity::find().filter(JobColumn::Id.eq(job_id)).one(db).await;
                     match job {
                         Err(err) => {
                             eprintln!("Error getting Job: {:?}", err);

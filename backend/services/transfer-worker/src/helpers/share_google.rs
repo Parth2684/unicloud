@@ -10,8 +10,14 @@ use sea_orm::{
 use serde::Deserialize;
 use serde_json::json;
 
-pub async fn create_permission(token: &str, file_id: &str, email_id: &str) -> Result<(), String> {
+pub async fn create_permission(
+    token: &str,
+    file_id: &str,
+    email_id: &str,
+    job_id: &Uuid,
+) -> Result<String, String> {
     let client = Client::new();
+    let db = init_db().await;
 
     let response = client
         .post(format!(
@@ -39,7 +45,29 @@ pub async fn create_permission(token: &str, file_id: &str, email_id: &str) -> Re
                 ));
             }
         }
-        Ok(_) => return Ok(()),
+        Ok(res) => match res.json::<Permission>().await {
+            Err(err) => {
+                eprintln!("{err:?}");
+                return Err(String::from("Error parsing response from google"));
+            }
+            Ok(r) => {
+                let job = JobEntity::find()
+                    .filter(JobColumn::Id.eq(job_id.to_owned()))
+                    .one(db)
+                    .await;
+
+                if let Ok(Some(j)) = job {
+                    let mut edit_job: JobActive = j.into();
+                    let permission_id = r.id;
+                    edit_job.permission_id = Set(permission_id.clone());
+                    edit_job.status = Set(Status::Completed);
+                    edit_job.update(db).await.ok();
+                    Ok(permission_id)
+                } else {
+                    return Err(String::from("error getting permission ids"));
+                }
+            }
+        },
     }
 }
 
@@ -48,18 +76,11 @@ struct Permission {
     id: String,
 }
 
-#[derive(Deserialize, Clone)]
-struct PermissionApiRes {
-    permissions: Vec<Permission>,
-}
-
 pub async fn copy_file(
     dest_token: &str,
     file_id: &str,
     dest_folder_id: &str,
-    job_id: &Uuid,
-) -> Result<Vec<String>, String> {
-    let db = init_db().await;
+) -> Result<(), String> {
     let client = Client::new();
     let response = client
         .post(format!(
@@ -77,70 +98,34 @@ pub async fn copy_file(
             eprintln!("{err:?}");
             return Err(String::from("Error copying file, try again"));
         }
-        Ok(res) => match res.json::<PermissionApiRes>().await {
-            Err(err) => {
-                eprintln!("{err:?}");
-                return Err(String::from("Error parsing response from google"));
-            }
-            Ok(r) => {
-                let job = JobEntity::find()
-                    .filter(JobColumn::Id.eq(job_id.to_owned()))
-                    .one(db)
-                    .await;
-
-                if let Ok(Some(j)) = job {
-                    let mut edit_job: JobActive = j.into();
-                    let mut permission_ids: Vec<String> = Vec::new();
-                    r.permissions.iter().for_each(|permission| {
-                        permission_ids.push(permission.id.clone());
-                    });
-                    edit_job.permission_id = Set(Some(permission_ids.clone()));
-                    edit_job.status = Set(Status::Completed);
-                    edit_job.update(db).await.ok();
-                    Ok(permission_ids)
-                } else {
-                    return Err(String::from("error getting permission ids"));
-                }
-            }
-        },
+        Ok(_) => Ok(()),
     }
 }
 
-pub async fn remove_permission(
-    permission_ids: Vec<String>,
-    file_id: &str,
-    token: &str,
-    job_id: &Uuid,
-) {
+pub async fn remove_permission(permission_id: String, file_id: &str, token: &str, job_id: &Uuid) {
     let client = Client::new();
     let db = init_db().await;
-    let mut delete_futures = Vec::new();
 
-    permission_ids.iter().for_each(|permission_id| {
-        let response = client
-            .delete(format!(
-                "https://www.googleapis.com/drive/v3/files/{file_id}/permissions/{permission_id}"
-            ))
-            .bearer_auth(token)
-            .send();
-        delete_futures.push(response);
-    });
+    let response = client
+        .delete(format!(
+            "https://www.googleapis.com/drive/v3/files/{file_id}/permissions/{permission_id}"
+        ))
+        .bearer_auth(token)
+        .send()
+        .await;
 
-    let results = futures::future::join_all(delete_futures).await;
-    for result in results {
-        match result {
-            Ok(_) => continue,
-            Err(err) => {
-                eprintln!("{err:?}");
-                let job = JobEntity::find()
-                    .filter(JobColumn::Id.eq(job_id.to_owned()))
-                    .one(db)
-                    .await;
-                if let Ok(Some(j)) = job {
-                    let mut edit_job: JobActive = j.into();
-                    edit_job.fail_reason = Set(Some(String::from("Error removing permissions")));
-                    edit_job.update(db).await.ok();
-                }
+    match response {
+        Ok(_) => (),
+        Err(err) => {
+            eprintln!("{err:?}");
+            let job = JobEntity::find()
+                .filter(JobColumn::Id.eq(job_id.to_owned()))
+                .one(db)
+                .await;
+            if let Ok(Some(j)) = job {
+                let mut edit_job: JobActive = j.into();
+                edit_job.fail_reason = Set(Some(String::from("Error removing permissions")));
+                edit_job.update(db).await.ok();
             }
         }
     }

@@ -3,15 +3,22 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct Capabilities {
-    can_share: bool,
-    can_copy: bool,
+struct PermissionRes {
+    capabilities: Capability
 }
+
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Capability {
+    can_edit: bool
+}
+
 pub async fn fetch_permissions(file_id: &str, token: &str) -> Result<(), String> {
     let client = Client::new();
     let response = client
         .get(format!(
-            "https://www.googleapis.com/drive/v3/files/{}?fields=capabilities",
+            "https://www.googleapis.com/drive/v3/files/{}?fields=capabilities(canEdit)",
             file_id
         ))
         .bearer_auth(token)
@@ -25,7 +32,8 @@ pub async fn fetch_permissions(file_id: &str, token: &str) -> Result<(), String>
             ));
         }
         Ok(resp) => {
-            let res = resp.json::<Capabilities>().await;
+            // println!("{:?}", &resp.json());
+            let res = resp.json::<PermissionRes>().await;
             match res {
                 Err(err) => {
                     eprintln!("Error parsing data from google: {err:?}");
@@ -33,15 +41,13 @@ pub async fn fetch_permissions(file_id: &str, token: &str) -> Result<(), String>
                         "error parsing permission details from google api",
                     ));
                 }
-                Ok(capabilities) => {
-                    if capabilities.can_copy | capabilities.can_share {
-                        return Ok(());
-                    } else {
-                        return Err(String::from(
-                            "You don't have enough permissions to copy or share this file, Try proxy tunnel",
-                        ));
+                Ok(permission) =>{
+                    if permission.capabilities.can_edit == false {
+                        return Err(String::from("You are not the editor or the owner of the file please try proxy tunnel"))
+                    }else {
+                        Ok(())
                     }
-                }
+                },
             }
         }
     }

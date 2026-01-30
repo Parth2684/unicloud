@@ -13,7 +13,7 @@ type DriveComponentProps = {
 };
 
 export const DriveComponent = ({ drive_id, folder_id }: DriveComponentProps) => {
-  const { setCurrentGoogleFolder, drive, loading, clipboard, clearClipboard } = useCloudStore();
+  const { setCurrentGoogleFolder, drive, loading, clipboard, clearClipboard, pasteHere } = useCloudStore();
 
   useEffect(() => {
     setCurrentGoogleFolder(drive_id, folder_id);
@@ -45,7 +45,7 @@ export const DriveComponent = ({ drive_id, folder_id }: DriveComponentProps) => 
           {clipboard && (
             <button
               onClick={async () => {
-                await pasteHere();
+                await pasteHere(clipboard.drive_id, clipboard.id, drive_id, folder_id || "root");
                 clearClipboard();
               }}
               className="rounded bg-sky-600 px-3 py-1 text-white hover:bg-sky-700"

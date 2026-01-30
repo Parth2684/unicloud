@@ -74,6 +74,26 @@ export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
     set({ clipboard: { id, name, drive_id, operation } });
   },
   clearClipboard: () => set({ clipboard: null }),
-  
-  
+
+  pasteHere: async (
+    from_drive: string,
+    from_file_id: string,
+    to_drive: string,
+    to_folder_id: string,
+  ) => {
+    try {
+      const res = await axiosInstance.post("/cloud/google/google-copy", {
+        from_drive,
+        from_file_id,
+        to_drive,
+        to_folder_id
+      })
+      toast.success(res.data.message)
+    } catch (error) {
+      console.error(error)
+      if (error instanceof AxiosError && error.response?.data) {
+        toast.error(error.response.data.message);
+      }
+    }
+  },
 }));
