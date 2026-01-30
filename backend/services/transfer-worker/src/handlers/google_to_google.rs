@@ -9,7 +9,7 @@ use entities::{
     },
     job::{ActiveModel as JobActive, Column as JobColumn, Entity as JobEntity, Model as JobModel},
     quota::{ActiveModel as QuotaActive, Column as QuotaColumn, Entity as QuotaEntity},
-    sea_orm_active_enums::{Status},
+    sea_orm_active_enums::Status,
 };
 use redis::AsyncTypedCommands;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
@@ -36,7 +36,7 @@ pub async fn copy_google_to_google(job: JobModel) {
     if let (Some(from_drive), Some(from_file_id), Some(is_folder)) =
         (&job.from_drive, &job.from_file_id, &job.is_folder)
     {
-    println!("1");
+        println!("1");
         if !is_folder {
             match job.size {
                 None => {
@@ -222,7 +222,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                             progress_pub(&job.user_id, &job.id, JobStage::Permissions, "Checking Permissions if user can share files directly", 15).await;
                                                             match fetch_permissions(
                                                                 from_file_id,
-                                                                &token
+                                                                &token,
                                                             )
                                                             .await
                                                             {
@@ -234,7 +234,8 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                         job.clone().into();
                                                                     edit_job.fail_reason =
                                                                         Set(Some(err));
-                                                                    edit_job.status = Set(Status::Failed);
+                                                                    edit_job.status =
+                                                                        Set(Status::Failed);
                                                                     let (_, _, _) = tokio::join!(
                                                                         edit_job.update(db),
                                                                         redis_conn.lrem(
@@ -264,7 +265,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                             &token,
                                                                             &from_file_id,
                                                                             &dest_acc.email,
-                                                                            &job.id
+                                                                            &job.id,
                                                                         )
                                                                         .await
                                                                         {
@@ -325,7 +326,6 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                                 edit_job.fail_reason = Set(Some(err));
                                                                                                 edit_job.update(db).await.ok();
                                                                                                 redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
-        
                                                                                             }
                                                                                             Ok(_) => {
                                                                                                 progress_pub(&job.user_id, &job.id, JobStage::Finalizing, "Removing permissions of the destination account from the source file", 92).await;
@@ -354,9 +354,8 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                         };
                                                                                     }
                                                                                 };
-                                                                            },
+                                                                            }
                                                                         };
-                                                                        
                                                                     }
                                                                 }
                                                             };

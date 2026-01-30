@@ -38,8 +38,11 @@ async fn main() {
             match id {
                 None => continue,
                 Some(id) => {
-                    let job_id= Uuid::parse_str(&id).unwrap();
-                    let job = JobEntity::find().filter(JobColumn::Id.eq(job_id)).one(db).await;
+                    let job_id = Uuid::parse_str(&id).unwrap();
+                    let job = JobEntity::find()
+                        .filter(JobColumn::Id.eq(job_id))
+                        .one(db)
+                        .await;
                     match job {
                         Err(err) => {
                             eprintln!("Error getting Job: {:?}", err);

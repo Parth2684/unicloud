@@ -4,14 +4,13 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PermissionRes {
-    capabilities: Capability
+    capabilities: Capability,
 }
-
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Capability {
-    can_edit: bool
+    can_edit: bool,
 }
 
 pub async fn fetch_permissions(file_id: &str, token: &str) -> Result<(), String> {
@@ -41,13 +40,15 @@ pub async fn fetch_permissions(file_id: &str, token: &str) -> Result<(), String>
                         "error parsing permission details from google api",
                     ));
                 }
-                Ok(permission) =>{
+                Ok(permission) => {
                     if permission.capabilities.can_edit == false {
-                        return Err(String::from("You are not the editor or the owner of the file please try proxy tunnel"))
-                    }else {
+                        return Err(String::from(
+                            "You are not the editor or the owner of the file please try proxy tunnel",
+                        ));
+                    } else {
                         Ok(())
                     }
-                },
+                }
             }
         }
     }

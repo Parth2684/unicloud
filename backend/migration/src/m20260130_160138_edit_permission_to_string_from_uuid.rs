@@ -1,4 +1,4 @@
-use sea_orm_migration::{prelude::*, schema::*};
+use sea_orm_migration::prelude::*;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -12,29 +12,26 @@ impl MigrationTrait for Migration {
             .alter_table(
                 Table::alter()
                     .table(Job::Table)
-                    .modify_column(ColumnDef::new(Job::PermissionId)
-                        .string()
-                        .not_null()
-                    )
+                    .modify_column(ColumnDef::new(Job::PermissionId).string().not_null())
                     .to_owned(),
             )
             .await
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        
         manager
-            .alter_table(Table::alter().table(Job::Table).modify_column(ColumnDef::new(Job::PermissionId)
-                .array(ColumnType::Text)
-            ).to_owned())
+            .alter_table(
+                Table::alter()
+                    .table(Job::Table)
+                    .modify_column(ColumnDef::new(Job::PermissionId).array(ColumnType::Text))
+                    .to_owned(),
+            )
             .await
     }
 }
 
-
 #[derive(DeriveIden)]
 enum Job {
     Table,
-    PermissionId
+    PermissionId,
 }
-

@@ -273,7 +273,6 @@ pub async fn drive_auth_callback(
                     account
                 }
             };
-            
 
             Ok(Redirect::to(&format!(
                 "{}/home",
@@ -367,5 +366,3 @@ pub async fn drive_auth_callback(
         }
     }
 }
-
-

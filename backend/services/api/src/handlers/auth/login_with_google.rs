@@ -7,8 +7,8 @@ use chrono::prelude::*;
 use common::db_connect::init_db;
 use common::export_envs::ENVS;
 use common::jwt_config::{create_jwt, decode_jwt};
+use entities::quota::{ActiveModel as QuotaActive, Column as QuotaColumn, Entity as QuotaEntity};
 use entities::users::{Column as UserColumn, Entity as UserEntity};
-use entities::quota::{Entity as QuotaEntity, Column as QuotaColumn, ActiveModel as QuotaActive};
 use entities::{cloud_account, users};
 use reqwest::Client;
 use sea_orm::ActiveValue::Set;
@@ -238,7 +238,7 @@ pub async fn google_auth_callback(
             user
         }
     };
-    
+
     let quota = QuotaEntity::find()
         .filter(QuotaColumn::UserId.eq(final_user.id))
         .one(db)
@@ -246,27 +246,29 @@ pub async fn google_auth_callback(
     match quota {
         Err(err) => {
             eprintln!("{err:?}");
-            return Err(AppError::Internal(Some(String::from("Error fetching quota please try again"))))
+            return Err(AppError::Internal(Some(String::from(
+                "Error fetching quota please try again",
+            ))));
         }
-        Ok(optional_quota) => {
-            match optional_quota {
-                Some(_) => (),
-                None => {
-                    let create_quota = QuotaActive {
-                        id: Set(Uuid::new_v4()),
-                        user_id: Set(final_user.id),
-                        ..Default::default()
-                    };
-                    match create_quota.insert(db).await{
-                        Err(err) => {
-                            eprintln!("{err:?}");
-                            return Err(AppError::Internal(Some(String::from("Error creating a quota for you please try again"))))
-                        }
-                        Ok(_) => ()
-                    };
-                }
+        Ok(optional_quota) => match optional_quota {
+            Some(_) => (),
+            None => {
+                let create_quota = QuotaActive {
+                    id: Set(Uuid::new_v4()),
+                    user_id: Set(final_user.id),
+                    ..Default::default()
+                };
+                match create_quota.insert(db).await {
+                    Err(err) => {
+                        eprintln!("{err:?}");
+                        return Err(AppError::Internal(Some(String::from(
+                            "Error creating a quota for you please try again",
+                        ))));
+                    }
+                    Ok(_) => (),
+                };
             }
-        }
+        },
     }
 
     let token = match create_jwt(&final_user.id.to_string()) {
