@@ -1,8 +1,9 @@
 "use client";
 
 import { ReactNode, useEffect, useRef } from "react";
-import { getSocket } from "../lib/ws-client";
+import { getSocket, sendWS } from "../lib/ws-client";
 import { useAuthStore } from "../stores/auth/useAuthStore";
+
 
 export default function WSProvider({ children }: { children: ReactNode }) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -11,7 +12,7 @@ export default function WSProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setToken();
-  }, []);
+  }, [token]);
   useEffect(() => {
     if (!token) return;
     const ws = getSocket(token);
@@ -22,12 +23,12 @@ export default function WSProvider({ children }: { children: ReactNode }) {
       console.log("[WS MESSAGE]", event.data);
     };
     ws.addEventListener("message", handleMessage);
-    ws.removeEventListener("message", handleMessage);
 
 
     const sendRefresh = () => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send("Refresh Token");
+        sendWS("Refresh Token");
+        sendWS("Transfer Status");
       }
     };
 

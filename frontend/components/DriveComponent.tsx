@@ -6,6 +6,7 @@ import { Spinner } from "./ui/spinner";
 import type { DriveFile } from "../stores/cloud/types";
 import { formatBytes, isFolder } from "../utils/format";
 import { useRouter } from "next/navigation";
+import { sendWS } from '../lib/ws-client';
 
 type DriveComponentProps = {
   drive_id: string;
@@ -47,6 +48,9 @@ export const DriveComponent = ({ drive_id, folder_id }: DriveComponentProps) => 
               onClick={async () => {
                 await pasteHere(clipboard.drive_id, clipboard.id, drive_id, folder_id || "root");
                 clearClipboard();
+                setInterval(() => {
+                  sendWS("Transfer Status");
+                }, 500)
               }}
               className="rounded bg-sky-600 px-3 py-1 text-white hover:bg-sky-700"
             >

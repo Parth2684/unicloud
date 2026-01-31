@@ -1,3 +1,9 @@
+use crate::helpers::{
+    fetch_permission_google::fetch_permissions,
+    progress_pub::progress_pub,
+    refresh_clouds::refresh_clouds,
+    share_google::{copy_file, create_permission, remove_permission},
+};
 use common::{
     db_connect::init_db, encrypt::decrypt, enums::JobStage, jwt_config::create_jwt,
     redis_connection::init_redis,
@@ -14,12 +20,6 @@ use entities::{
 use redis::AsyncTypedCommands;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
-use crate::helpers::{
-    fetch_permission_google::fetch_permissions,
-    progress_pub::progress_pub,
-    refresh_clouds::refresh_clouds,
-    share_google::{copy_file, create_permission, remove_permission},
-};
 
 pub async fn copy_google_to_google(job: JobModel) {
     let (db, mut redis_conn) = tokio::join!(init_db(), init_redis());

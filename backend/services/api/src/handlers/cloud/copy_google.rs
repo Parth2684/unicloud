@@ -16,7 +16,7 @@ use entities::{
     },
     sea_orm_active_enums::Status,
 };
-use entities::{job::ActiveModel as JobActive, sea_orm_active_enums::TransferType};
+use entities::{job::{ActiveModel as JobActive, Entity as JobEntity, Column as JobColumn}, sea_orm_active_enums::TransferType};
 use redis::AsyncTypedCommands;
 use reqwest::Client;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
@@ -70,7 +70,7 @@ pub async fn copy_file_or_folder(
             ))));
         }
         (Ok(from_id), Ok(to_id)) => {
-            let (from_acc, to_acc) = tokio::join!(
+            let (from_acc, to_acc, jobs) = tokio::join!(
                 CloudAccountEntity::find()
                     .filter(CloudAccountColumn::Id.eq(from_id))
                     .filter(CloudAccountColumn::UserId.eq(claims.id))
@@ -78,29 +78,56 @@ pub async fn copy_file_or_folder(
                 CloudAccountEntity::find()
                     .filter(CloudAccountColumn::Id.eq(to_id))
                     .filter(CloudAccountColumn::UserId.eq(claims.id))
-                    .one(db)
+                    .one(db),
+                JobEntity::find()
+                    .filter(JobColumn::UserId.eq(claims.id))
+                    .all(db)
             );
 
-            match (from_acc, to_acc) {
-                (Err(err1), Err(err2)) => {
-                    eprintln!("error fetching accounts: {:?}, {:?}", err1, err2);
+            match (from_acc, to_acc, jobs) {
+                (Err(err1), Err(err2), Err(err3)) => {
+                    eprintln!("error fetching accounts: {:?}, {:?}, {:?}", err1, err2, err3);
                     return Err(AppError::Internal(Some(String::from(
                         "Error fetching both the transfer accounts",
                     ))));
                 }
-                (Err(err), Ok(_)) => {
+                (Err(err), Ok(_), Ok(_)) => {
                     eprintln!("error fetching source account: {err:?}");
                     return Err(AppError::Internal(Some(String::from(
                         "Error fetching source account",
                     ))));
                 }
-                (Ok(_), Err(err)) => {
+                (Ok(_), Err(err), Err(err2)) => {
+                    eprintln!("error fetching destination account: {err:?}, {err2:?}");
+                    return Err(AppError::Internal(Some(String::from(
+                        "Error fetching destination account",
+                    ))));
+                }
+                (Err(err1), Ok(_), Err(err)) => {
+                    eprintln!("error fetching Jobs: {err:?} and source account: {err1}");
+                    return Err(AppError::Internal(Some(String::from(
+                        "Error fetching jobs and source accounts",
+                    ))));
+                }
+                (Ok(_), Err(err), Ok(_)) => {
                     eprintln!("error fetching destination account: {err:?}");
                     return Err(AppError::Internal(Some(String::from(
                         "Error fetching destination account",
                     ))));
                 }
-                (Ok(some_from_acc), Ok(some_to_acc)) => match (some_from_acc, some_to_acc) {
+                (Err(err1), Err(err2), Ok(_)) => {
+                    eprintln!("error fetching accounts{err1}, {err2}");
+                    return Err(AppError::Internal(Some(String::from(
+                        "Error fetching accounts",
+                    ))));
+                }
+                (Ok(_), Ok(_), Err(err)) => {
+                    eprintln!("error fetching Jobs: {err:?}");
+                    return Err(AppError::Internal(Some(String::from(
+                        "Error fetching jobs",
+                    ))));
+                }
+                (Ok(some_from_acc), Ok(some_to_acc), Ok(all_jobs)) => match (some_from_acc, some_to_acc) {
                     (None, None) => {
                         eprintln!("Neither accounts found under the user id ");
                         return Err(AppError::NotFound(Some(String::from(
@@ -132,6 +159,12 @@ pub async fn copy_file_or_folder(
                                 destination_acc.email
                             )))));
                         }
+                        if all_jobs.iter().any(|j| j.status == Status::Pending) {
+                            return Err(AppError::Forbidden(Some(
+                                String::from("You cannot do more than 1 transfers at a time")
+                            )));
+                        }
+                        
                         match decrypt(&source_acc.access_token) {
                             Err(err) => {
                                 eprintln!("Error decrypting access token: {:?}", err);
