@@ -20,7 +20,6 @@ use entities::{
 use redis::AsyncTypedCommands;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
-
 pub async fn copy_google_to_google(job: JobModel) {
     let (db, mut redis_conn) = tokio::join!(init_db(), init_redis());
     if &job.status != &Status::Pending {

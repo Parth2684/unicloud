@@ -16,7 +16,10 @@ use entities::{
     },
     sea_orm_active_enums::Status,
 };
-use entities::{job::{ActiveModel as JobActive, Entity as JobEntity, Column as JobColumn}, sea_orm_active_enums::TransferType};
+use entities::{
+    job::{ActiveModel as JobActive, Column as JobColumn, Entity as JobEntity},
+    sea_orm_active_enums::TransferType,
+};
 use redis::AsyncTypedCommands;
 use reqwest::Client;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
@@ -86,7 +89,10 @@ pub async fn copy_file_or_folder(
 
             match (from_acc, to_acc, jobs) {
                 (Err(err1), Err(err2), Err(err3)) => {
-                    eprintln!("error fetching accounts: {:?}, {:?}, {:?}", err1, err2, err3);
+                    eprintln!(
+                        "error fetching accounts: {:?}, {:?}, {:?}",
+                        err1, err2, err3
+                    );
                     return Err(AppError::Internal(Some(String::from(
                         "Error fetching both the transfer accounts",
                     ))));
@@ -127,57 +133,62 @@ pub async fn copy_file_or_folder(
                         "Error fetching jobs",
                     ))));
                 }
-                (Ok(some_from_acc), Ok(some_to_acc), Ok(all_jobs)) => match (some_from_acc, some_to_acc) {
-                    (None, None) => {
-                        eprintln!("Neither accounts found under the user id ");
-                        return Err(AppError::NotFound(Some(String::from(
-                            "Both accounts were not found under your access",
-                        ))));
-                    }
-                    (None, Some(_)) => {
-                        eprintln!("Source account not found in db");
-                        return Err(AppError::NotFound(Some(String::from(
-                            "Source account not found under your access",
-                        ))));
-                    }
-                    (Some(_), None) => {
-                        eprintln!("Destination account not found in db");
-                        return Err(AppError::NotFound(Some(String::from(
-                            "Destination account not found under your access",
-                        ))));
-                    }
-                    (Some(source_acc), Some(destination_acc)) => {
-                        if source_acc.token_expired == true {
-                            return Err(AppError::UnprocessableEntry(Some(String::from(format!(
-                                "Your Source account {:?} needs to be refreshed to perform this action",
-                                source_acc.email
-                            )))));
+                (Ok(some_from_acc), Ok(some_to_acc), Ok(all_jobs)) => {
+                    match (some_from_acc, some_to_acc) {
+                        (None, None) => {
+                            eprintln!("Neither accounts found under the user id ");
+                            return Err(AppError::NotFound(Some(String::from(
+                                "Both accounts were not found under your access",
+                            ))));
                         }
-                        if destination_acc.token_expired == true {
-                            return Err(AppError::UnprocessableEntry(Some(String::from(format!(
-                                "Your destination account {:?} needs to be refreshed to perfrom this action",
-                                destination_acc.email
-                            )))));
+                        (None, Some(_)) => {
+                            eprintln!("Source account not found in db");
+                            return Err(AppError::NotFound(Some(String::from(
+                                "Source account not found under your access",
+                            ))));
                         }
-                        if all_jobs.iter().any(|j| j.status == Status::Pending) {
-                            return Err(AppError::Forbidden(Some(
-                                String::from("You cannot do more than 1 transfers at a time")
-                            )));
+                        (Some(_), None) => {
+                            eprintln!("Destination account not found in db");
+                            return Err(AppError::NotFound(Some(String::from(
+                                "Destination account not found under your access",
+                            ))));
                         }
-                        
-                        match decrypt(&source_acc.access_token) {
-                            Err(err) => {
-                                eprintln!("Error decrypting access token: {:?}", err);
-                                let mut source_active: CloudAccountActive = source_acc.into();
-                                source_active.token_expired = Set(true);
-                                source_active.update(db).await.ok();
-                                return Err(AppError::Internal(Some(String::from(
-                                    "Error decrypting access token please refresh your account",
+                        (Some(source_acc), Some(destination_acc)) => {
+                            if source_acc.token_expired == true {
+                                return Err(AppError::UnprocessableEntry(Some(String::from(
+                                    format!(
+                                        "Your Source account {:?} needs to be refreshed to perform this action",
+                                        source_acc.email
+                                    ),
                                 ))));
                             }
-                            Ok(token) => {
-                                let client = Client::new();
-                                let res = client
+                            if destination_acc.token_expired == true {
+                                return Err(AppError::UnprocessableEntry(Some(String::from(
+                                    format!(
+                                        "Your destination account {:?} needs to be refreshed to perfrom this action",
+                                        destination_acc.email
+                                    ),
+                                ))));
+                            }
+                            if all_jobs.iter().any(|j| j.status == Status::Pending) {
+                                return Err(AppError::Forbidden(Some(String::from(
+                                    "You cannot do more than 1 transfers at a time",
+                                ))));
+                            }
+
+                            match decrypt(&source_acc.access_token) {
+                                Err(err) => {
+                                    eprintln!("Error decrypting access token: {:?}", err);
+                                    let mut source_active: CloudAccountActive = source_acc.into();
+                                    source_active.token_expired = Set(true);
+                                    source_active.update(db).await.ok();
+                                    return Err(AppError::Internal(Some(String::from(
+                                        "Error decrypting access token please refresh your account",
+                                    ))));
+                                }
+                                Ok(token) => {
+                                    let client = Client::new();
+                                    let res = client
                                     .get(format!(
                                       "https://www.googleapis.com/drive/v3/files/{}?fields=mimeType,size&supportsAllDrives=true",
                                       payload.from_file_id
@@ -186,103 +197,109 @@ pub async fn copy_file_or_folder(
                                     .send()
                                     .await;
 
-                                match res {
-                                    Err(err) => {
-                                        eprintln!(
-                                            "error receiving response from derive api: {:?}",
-                                            err
-                                        );
-                                        return Err(AppError::BadGateway(Some(String::from(
-                                            "Error receiving details of files from google",
-                                        ))));
-                                    }
-                                    Ok(response) => match response.json::<FileDetail>().await {
+                                    match res {
                                         Err(err) => {
                                             eprintln!(
-                                                "error parsing response from google: {:?}",
+                                                "error receiving response from derive api: {:?}",
                                                 err
                                             );
                                             return Err(AppError::BadGateway(Some(String::from(
-                                                "Error Parsing response from google",
+                                                "Error receiving details of files from google",
                                             ))));
                                         }
-                                        Ok(details) => {
-                                            let is_folder = details.mime_type
-                                                == String::from(
-                                                    "application/vnd.google-apps.folder",
+                                        Ok(response) => match response.json::<FileDetail>().await {
+                                            Err(err) => {
+                                                eprintln!(
+                                                    "error parsing response from google: {:?}",
+                                                    err
                                                 );
-                                            let size_i64: Option<i64> = details
-                                                .size
-                                                .as_deref()
-                                                .and_then(|s| s.parse::<i64>().ok());
-
-                                            let id = Uuid::new_v4();
-
-                                            let insert_job = JobActive::insert(
-                                                JobActive {
-                                                    id: Set(id),
-                                                    from_drive: Set(Some(source_acc.id)),
-                                                    from_file_id: Set(Some(
-                                                        payload.from_file_id.clone(),
-                                                    )),
-                                                    is_folder: Set(Some(is_folder)),
-                                                    to_drive: Set(destination_acc.id),
-                                                    to_folder_id: Set(payload.to_folder_id.clone()),
-                                                    user_id: Set(claims.id),
-                                                    size: Set(size_i64),
-                                                    permission_id: Set("Just started".into()),
-                                                    transfer_type: Set(
-                                                        TransferType::GoogleToGoogle,
+                                                return Err(AppError::BadGateway(Some(
+                                                    String::from(
+                                                        "Error Parsing response from google",
                                                     ),
-                                                    ..Default::default()
-                                                },
-                                                db,
-                                            )
-                                            .await;
+                                                )));
+                                            }
+                                            Ok(details) => {
+                                                let is_folder = details.mime_type
+                                                    == String::from(
+                                                        "application/vnd.google-apps.folder",
+                                                    );
+                                                let size_i64: Option<i64> = details
+                                                    .size
+                                                    .as_deref()
+                                                    .and_then(|s| s.parse::<i64>().ok());
 
-                                            match insert_job {
-                                                Err(err) => {
-                                                    eprintln!("error creating task: {err:?}");
-                                                    return Err(AppError::Internal(Some(
-                                                        String::from("Error creating task"),
-                                                    )));
-                                                }
-                                                Ok(job) => {
-                                                    match redis_conn
-                                                        .lpush("copy:job", job.id.to_string())
-                                                        .await
-                                                    {
-                                                        Err(err) => {
-                                                            eprintln!(
-                                                                "error pushing to redis queue: {err:?}"
-                                                            );
-                                                            let mut edit_job: JobActive =
-                                                                job.into();
-                                                            edit_job.status = Set(Status::Failed);
-                                                            edit_job.update(db).await.ok();
-                                                            return Err(AppError::Internal(Some(
+                                                let id = Uuid::new_v4();
+
+                                                let insert_job = JobActive::insert(
+                                                    JobActive {
+                                                        id: Set(id),
+                                                        from_drive: Set(Some(source_acc.id)),
+                                                        from_file_id: Set(Some(
+                                                            payload.from_file_id.clone(),
+                                                        )),
+                                                        is_folder: Set(Some(is_folder)),
+                                                        to_drive: Set(destination_acc.id),
+                                                        to_folder_id: Set(payload
+                                                            .to_folder_id
+                                                            .clone()),
+                                                        user_id: Set(claims.id),
+                                                        size: Set(size_i64),
+                                                        permission_id: Set("Just started".into()),
+                                                        transfer_type: Set(
+                                                            TransferType::GoogleToGoogle,
+                                                        ),
+                                                        ..Default::default()
+                                                    },
+                                                    db,
+                                                )
+                                                .await;
+
+                                                match insert_job {
+                                                    Err(err) => {
+                                                        eprintln!("error creating task: {err:?}");
+                                                        return Err(AppError::Internal(Some(
+                                                            String::from("Error creating task"),
+                                                        )));
+                                                    }
+                                                    Ok(job) => {
+                                                        match redis_conn
+                                                            .lpush("copy:job", job.id.to_string())
+                                                            .await
+                                                        {
+                                                            Err(err) => {
+                                                                eprintln!(
+                                                                    "error pushing to redis queue: {err:?}"
+                                                                );
+                                                                let mut edit_job: JobActive =
+                                                                    job.into();
+                                                                edit_job.status =
+                                                                    Set(Status::Failed);
+                                                                edit_job.update(db).await.ok();
+                                                                return Err(AppError::Internal(Some(
                                                                 "Error pushing to job queue".into(),
                                                             )));
-                                                        }
-                                                        Ok(_) => {
-                                                            return Ok((
+                                                            }
+                                                            Ok(_) => {
+                                                                return Ok((
                                                                     StatusCode::OK,
                                                                     axum::Json(json!({
                                                                         "message": "Task added successfully",
                                                                     })),
                                                                 )
                                                                     .into_response());
-                                                        }
-                                                    };
+                                                            }
+                                                        };
+                                                    }
                                                 }
                                             }
-                                        }
-                                    },
+                                        },
+                                    }
                                 }
-                            }
-                        };
+                            };
+                        }
                     }
-                },
+                }
             }
         }
     }

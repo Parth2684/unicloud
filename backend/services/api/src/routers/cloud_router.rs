@@ -5,7 +5,12 @@ use axum::{
 
 use crate::{
     handlers::cloud::{
-        copy_google::copy_file_or_folder, get_cloud_accounts::get_cloud_accounts, get_jobs::get_jobs, get_shared_drive::get_shared_drives, google_get_folders::{google_get_folders, google_get_root}
+        copy_google::copy_file_or_folder,
+        edit_jobs::edit_job,
+        get_cloud_accounts::get_cloud_accounts,
+        get_jobs::get_jobs,
+        get_shared_drive::get_shared_drives,
+        google_get_folders::{google_get_folders, google_get_root},
     },
     utils::middleware::auth_middleware,
 };
@@ -21,5 +26,6 @@ pub fn cloud_router() -> Router {
         .route("/google/shared_drive/{drive_id}", get(get_shared_drives))
         .route("/google/google-copy", post(copy_file_or_folder))
         .route("/get-jobs", get(get_jobs))
+        .route("/edit-job", post(edit_job))
         .layer(middleware::from_fn(auth_middleware))
 }
