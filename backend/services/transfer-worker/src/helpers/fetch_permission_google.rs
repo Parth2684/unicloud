@@ -31,7 +31,6 @@ pub async fn fetch_permissions(file_id: &str, token: &str) -> Result<(), String>
             ));
         }
         Ok(resp) => {
-            // println!("{:?}", &resp.json());
             let res = resp.json::<PermissionRes>().await;
             match res {
                 Err(err) => {
