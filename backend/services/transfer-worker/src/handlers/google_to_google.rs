@@ -332,24 +332,25 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                                 redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
                                                                                                 let remaining_overall = quo.remaining_quota - size;
 
-let mut edit_quota: QuotaActive = quo.clone().into();
+                                                                                                let mut edit_quota: QuotaActive = quo.clone().into();
 
-if quo.add_on_quota >= size {
-    // Case 1: add-on fully covers transfer
-    edit_quota.add_on_quota = Set(quo.add_on_quota - size);
-} else {
-    // Case 2: add-on partially or fully used
-    let used_from_addon = quo.add_on_quota;
-    let used_from_free = size - used_from_addon;
+                                                                                                if quo.add_on_quota >= size {
+                                                                                                    // Case 1: add-on fully covers transfer
+                                                                                                    edit_quota.add_on_quota = Set(quo.add_on_quota - size);
+                                                                                                } else {
+                                                                                                    // Case 2: add-on partially or fully used
+                                                                                                    let used_from_addon = quo.add_on_quota;
+                                                                                                    let used_from_free = size - used_from_addon;
 
-    edit_quota.add_on_quota = Set(0);
-    edit_quota.free_quota = Set(quo.free_quota - used_from_free);
-}
+                                                                                                    edit_quota.add_on_quota = Set(0);
+                                                                                                    edit_quota.free_quota = Set(quo.free_quota - used_from_free);
+                                                                                                }
 
-edit_quota.remaining_quota = Set(remaining_overall);let mut edit_job: JobActive = job.clone().into();
+                                                                                                edit_quota.remaining_quota = Set(remaining_overall);
+                                                                                                let mut edit_job: JobActive = job.clone().into();
                                                                                                 edit_job.fail_reason = Set(None);
                                                                                                 edit_job.status = Set(Status::Completed);
-                                                                                                let (_, _) = tokio::join!(progress_pub(&job.user_id, &job.id, JobStage::Completed, "Completed The Job Successfully", 100), edit_job.update(db));
+                                                                                                let (_, _, _) = tokio::join!(progress_pub(&job.user_id, &job.id, JobStage::Completed, "Completed The Job Successfully", 100), edit_job.update(db), edit_quota.update(db));
                                                                                             }
                                                                                         };
                                                                                     }

@@ -4,7 +4,10 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use common::{db_connect::init_db, jwt_config::Claims};
-use entities::{cloud_account::{Column as CloudColumn}, job::{Column as JobColumn, Entity as JobEntity}};
+use entities::{
+    cloud_account::Column as CloudColumn,
+    job::{Column as JobColumn, Entity as JobEntity},
+};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
 use serde_json::json;
 
@@ -18,8 +21,6 @@ pub async fn get_jobs(Extension(claims): Extension<Claims>) -> Result<Response, 
         .all(db)
         .await
     {
-        
-        
         Err(err) => {
             eprintln!("error fetching jobs: {:?}", err);
             return Err(AppError::Internal(Some(String::from(
