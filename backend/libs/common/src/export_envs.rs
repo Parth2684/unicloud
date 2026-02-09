@@ -17,6 +17,7 @@ pub struct Envs {
     pub redis_url: String,
     pub domain: Option<String>,
     pub websocket_url: String,
+    pub port: String
 }
 
 pub static ENVS: Lazy<Envs> = Lazy::new(|| {
@@ -52,6 +53,7 @@ pub static ENVS: Lazy<Envs> = Lazy::new(|| {
     let redis_url = dotenvy::var("REDIS_URL").expect("Redis url must be present");
     let domain = dotenvy::var("DOMAIN").ok();
     let websocket_url = dotenvy::var("WEBSOCKET_URL").expect("Websocket url must be there");
+    let port = dotenvy::var("PORT").unwrap_or("8080".into());
 
     Envs {
         database_url,
@@ -69,5 +71,6 @@ pub static ENVS: Lazy<Envs> = Lazy::new(|| {
         redis_url,
         domain,
         websocket_url,
+        port
     }
 });

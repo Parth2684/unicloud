@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use crate::helpers::{
     fetch_permission_google::fetch_permissions,
     progress_pub::progress_pub,
@@ -21,6 +23,7 @@ use redis::AsyncTypedCommands;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
 pub async fn copy_google_to_google(job: JobModel) {
+    let start = Instant::now();
     let (db, mut redis_conn) = tokio::join!(init_db(), init_redis());
     if &job.status != &Status::Pending {
         redis_conn
@@ -327,6 +330,12 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                                 redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
                                                                                             }
                                                                                             Ok(_) => {
+                                                                                                let elapsed = start.elapsed();
+                                                                                                   println!(
+                                                                                                       "[TIMING] job {} finished in {:.2?}",
+                                                                                                       job.id,
+                                                                                                       elapsed
+                                                                                                   );
                                                                                                 progress_pub(&job.user_id, &job.id, JobStage::Finalizing, "Removing permissions of the destination account from the source file", 92).await;
                                                                                                 remove_permission(id, from_file_id, &token, &job.id).await;
                                                                                                 redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
@@ -335,10 +344,8 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                                 let mut edit_quota: QuotaActive = quo.clone().into();
 
                                                                                                 if quo.add_on_quota >= size {
-                                                                                                    // Case 1: add-on fully covers transfer
                                                                                                     edit_quota.add_on_quota = Set(quo.add_on_quota - size);
                                                                                                 } else {
-                                                                                                    // Case 2: add-on partially or fully used
                                                                                                     let used_from_addon = quo.add_on_quota;
                                                                                                     let used_from_free = size - used_from_addon;
 

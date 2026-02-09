@@ -2,7 +2,7 @@ use crate::handlers::{
     helpers::subscriber::{JobBus, listen},
     ws_handle::accept_connection,
 };
-use common::{db_connect::init_db, redis_connection::init_redis};
+use common::{db_connect::init_db, redis_connection::init_redis, export_envs::ENVS};
 use once_cell::sync::Lazy;
 use std::{collections::HashMap, fmt::Error, sync::Arc};
 use tokio::{net::TcpListener, sync::Mutex as TokioMutex};
@@ -13,7 +13,7 @@ pub static JOB_BUS: Lazy<JobBus> = Lazy::new(|| Arc::new(TokioMutex::new(HashMap
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let addr = String::from("0.0.0.0:8080");
+    let addr = format!("0.0.0.0:{}", &ENVS.port);
     let try_socket = TcpListener::bind(&addr).await;
     let listner = try_socket.expect("Failed to bind");
     println!("Listeneing on {:?}", addr);
