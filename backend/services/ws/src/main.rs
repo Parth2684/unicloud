@@ -7,8 +7,8 @@ use common::{db_connect::init_db, export_envs::ENVS, redis_connection::init_redi
 use once_cell::sync::Lazy;
 use redis::aio::ConnectionManager;
 use sea_orm::DatabaseConnection;
-use std::{collections::HashMap, sync::Arc};
-use tokio::{sync::Mutex as TokioMutex};
+use std::{collections::HashMap, sync::Arc, time::Duration};
+use tokio::{sync::Mutex as TokioMutex, time::interval};
 
 
 mod handlers;
@@ -30,13 +30,22 @@ async fn main() {
 
     let state = AppState { redis, db };
     tokio::spawn(listen(JOB_BUS.clone()));
-
+    tokio::spawn(async {
+        let mut ticker = interval(Duration::from_secs(300));
+        loop {
+            ticker.tick().await;
+            let client = reqwest::Client::new();
+            println!("{:?}", client.get(format!("{}/", &ENVS.transfer)).send().await.ok());
+            println!("{:?}", client.get(format!("{}/", &ENVS.refresh)).send().await.ok());
+        }
+    });
+    
     let app: Router<()> = Router::new()
         .route("/", get(|| async { "Noice" }))
         .route("/ws", get(ws_handler))
         .with_state(state);
-    
+
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", &ENVS.port)).await.unwrap();
-    println!("Server running on port 3000");
+    println!("Server running on port {}", &ENVS.port);
     axum::serve(listener, app.into_make_service()).await.unwrap();
 }

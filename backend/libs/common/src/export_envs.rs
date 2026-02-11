@@ -17,7 +17,9 @@ pub struct Envs {
     pub redis_url: String,
     pub domain: Option<String>,
     pub websocket_url: String,
-    pub port: String
+    pub port: String,
+    pub transfer: String,
+    pub refresh: String
 }
 
 pub static ENVS: Lazy<Envs> = Lazy::new(|| {
@@ -54,7 +56,9 @@ pub static ENVS: Lazy<Envs> = Lazy::new(|| {
     let domain = dotenvy::var("DOMAIN").ok();
     let websocket_url = dotenvy::var("WEBSOCKET_URL").expect("Websocket url must be there");
     let port = dotenvy::var("PORT").unwrap_or("8080".into());
-
+    let transfer = dotenvy::var("TRANSFER").unwrap_or(String::from("http://localhost:3001"));
+    let refresh = dotenvy::var("REFRESH").unwrap_or(String::from("http://localhost:3002"));
+    
     Envs {
         database_url,
         google_client_id,
@@ -71,6 +75,8 @@ pub static ENVS: Lazy<Envs> = Lazy::new(|| {
         redis_url,
         domain,
         websocket_url,
-        port
+        port,
+        transfer,
+        refresh
     }
 });

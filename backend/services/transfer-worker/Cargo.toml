@@ -17,3 +17,4 @@ futures-util = "0.3.31"
 url = "2.5.7"
 tokio-tungstenite = { version = "0.28.0", features = ["native-tls"] }
 uuid = { version = "1.18.1", features = ["v4"] }
+axum = { version = "0.8.6", features = ["http2"] }

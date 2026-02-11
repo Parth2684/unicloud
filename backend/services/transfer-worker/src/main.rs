@@ -1,9 +1,10 @@
 use std::{num::NonZeroUsize, sync::Arc, thread};
 
+use axum::{Router, routing::get};
 use common::{db_connect::init_db, export_envs::ENVS, redis_connection::init_redis};
 use entities::job::{Column as JobColumn, Entity as JobEntity};
 use redis::AsyncTypedCommands;
-use tokio::{sync::Semaphore, task};
+use tokio::{net::TcpListener, sync::Semaphore, task};
 
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use uuid::Uuid;
@@ -16,6 +17,15 @@ mod job;
 #[tokio::main]
 async fn main() {
     let (mut redis_conn, db) = tokio::join!(init_redis(), init_db());
+    let listener = TcpListener::bind("0.0.0.0:3002").await.unwrap();
+
+    let app: Router<()> = Router::new().route("/", get(|| async { "Noice" }));
+
+    tokio::spawn(async {
+      axum::serve(listener, app).await.unwrap();  
+      println!("transfer worker running on port 3002");
+    });
+    
     let multiple: usize;
     if ENVS.environment == "PRODUCTION" {
         multiple = 2
