@@ -20,9 +20,9 @@ export default function Home() {
 
   //   checkAuth();
   // }, []);
-
+  const authLink = process.env.NEXT_PUBLIC_BACKEND_URL! + "/auth/google"
   const handleGoogleSignIn = () => {
-    window.location.href = "http://localhost:3000/api/v1/auth/google";
+    window.location.href = authLink;
   };
 
   return (
