@@ -33,7 +33,7 @@ async fn main() {
             .unwrap_or(4)
             * multiple;
         let semaphore = Arc::new(Semaphore::new(max_workers));
-    
+
         loop {
             let permit = semaphore.clone().acquire_owned().await.unwrap();
             let job_id = redis_conn
@@ -69,8 +69,7 @@ async fn main() {
             }
         }
     });
-    
-      axum::serve(listener, app).await.unwrap();  
-      println!("transfer worker running on port 3002");
-    
+
+    println!("transfer worker running on port 3002");
+    axum::serve(listener, app).await.unwrap();
 }

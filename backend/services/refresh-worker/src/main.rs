@@ -47,6 +47,6 @@ async fn main() {
         }
     });
 
-    axum::serve(listener, app).await.unwrap();
     println!("refresh worker running on port 3001");
+    axum::serve(listener, app).await.unwrap();
 }
