@@ -1,31 +1,42 @@
-use crate::handlers::{
-    helpers::subscriber::{JobBus, listen},
-    ws_handle::accept_connection,
+use crate::{
+    handlers::helpers::subscriber::{JobBus, listen},
+    socket_upgrade::ws_handler,
 };
-use common::{db_connect::init_db, redis_connection::init_redis, export_envs::ENVS};
+use axum::{Router, routing::get};
+use common::{db_connect::init_db, export_envs::ENVS, redis_connection::init_redis};
 use once_cell::sync::Lazy;
-use std::{collections::HashMap, fmt::Error, sync::Arc};
-use tokio::{net::TcpListener, sync::Mutex as TokioMutex};
+use redis::aio::ConnectionManager;
+use sea_orm::DatabaseConnection;
+use std::{collections::HashMap, sync::Arc};
+use tokio::{sync::Mutex as TokioMutex};
+
 
 mod handlers;
+mod socket_upgrade;
+
+#[derive(Clone)]
+pub struct AppState {
+    redis: Arc<ConnectionManager>,
+    db: &'static DatabaseConnection,
+}
 
 pub static JOB_BUS: Lazy<JobBus> = Lazy::new(|| Arc::new(TokioMutex::new(HashMap::new())));
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
-    let addr = format!("0.0.0.0:{}", &ENVS.port);
-    let try_socket = TcpListener::bind(&addr).await;
-    let listner = try_socket.expect("Failed to bind");
-    println!("Listeneing on {:?}", addr);
+async fn main() {
     let manager = init_redis().await;
     let redis = Arc::new(manager);
     let db = init_db().await;
 
+    let state = AppState { redis, db };
     tokio::spawn(listen(JOB_BUS.clone()));
 
-    while let Ok((stream, _)) = listner.accept().await {
-        let conn = Arc::clone(&redis);
-        tokio::spawn(accept_connection(stream, conn, db));
-    }
-    Ok(())
+    let app: Router<()> = Router::new()
+        .route("/", get(|| async { "Noice" }))
+        .route("/ws", get(ws_handler))
+        .with_state(state);
+    
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", &ENVS.port)).await.unwrap();
+    println!("Server running on port 3000");
+    axum::serve(listener, app.into_make_service()).await.unwrap();
 }
