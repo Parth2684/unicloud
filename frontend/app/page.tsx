@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function Home() {
   // useEffect(() => {
   //   // Check if user is already authenticated
@@ -31,7 +33,14 @@ export default function Home() {
           <p className="text-lg text-gray-500 mb-4">All your clouds at one place</p>
           <p className="text-gray-600">Sign in to access your cloud storage</p>
         </div>
-        
+
+        <Link href={"/terms-of-service"}>
+          <strong className="text-blue-500">Terms of service</strong>
+        </Link>
+        <Link href={"/privacy-policy"}>
+          <strong className="text-blue-500">Privacy Policy</strong>
+        </Link>
+
         <button
           onClick={handleGoogleSignIn}
           className="flex items-center gap-3 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
