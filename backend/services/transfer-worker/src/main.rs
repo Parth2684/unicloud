@@ -16,60 +16,61 @@ mod job;
 
 #[tokio::main]
 async fn main() {
-    let (mut redis_conn, db) = tokio::join!(init_redis(), init_db());
     let listener = TcpListener::bind("0.0.0.0:3002").await.unwrap();
 
     let app: Router<()> = Router::new().route("/", get(|| async { "Noice" }));
 
     tokio::spawn(async {
-      axum::serve(listener, app).await.unwrap();  
-      println!("transfer worker running on port 3002");
-    });
+        let (mut redis_conn, db) = tokio::join!(init_redis(), init_db());
+        let multiple: usize;
+        if ENVS.environment == "PRODUCTION" {
+            multiple = 2
+        } else {
+            multiple = 1
+        }
+        let max_workers = thread::available_parallelism()
+            .map(NonZeroUsize::get)
+            .unwrap_or(4)
+            * multiple;
+        let semaphore = Arc::new(Semaphore::new(max_workers));
     
-    let multiple: usize;
-    if ENVS.environment == "PRODUCTION" {
-        multiple = 2
-    } else {
-        multiple = 1
-    }
-    let max_workers = thread::available_parallelism()
-        .map(NonZeroUsize::get)
-        .unwrap_or(4)
-        * multiple;
-    let semaphore = Arc::new(Semaphore::new(max_workers));
-
-    loop {
-        let permit = semaphore.clone().acquire_owned().await.unwrap();
-        let job_id = redis_conn
-            .brpoplpush("copy:job", "processing", 1.0)
-            .await
-            .ok();
-        if let Some(id) = job_id {
-            match id {
-                None => continue,
-                Some(id) => {
-                    let job_id = Uuid::parse_str(&id).unwrap();
-                    let job = JobEntity::find()
-                        .filter(JobColumn::Id.eq(job_id))
-                        .one(db)
-                        .await;
-                    match job {
-                        Err(err) => {
-                            eprintln!("Error getting Job: {:?}", err);
-                            continue;
-                        }
-                        Ok(job_optional) => match job_optional {
-                            None => eprintln!("Job not found"),
-                            Some(job) => {
-                                task::spawn(async move {
-                                    let _permit = permit;
-                                    process_job(job).await;
-                                });
+        loop {
+            let permit = semaphore.clone().acquire_owned().await.unwrap();
+            let job_id = redis_conn
+                .brpoplpush("copy:job", "processing", 1.0)
+                .await
+                .ok();
+            if let Some(id) = job_id {
+                match id {
+                    None => continue,
+                    Some(id) => {
+                        let job_id = Uuid::parse_str(&id).unwrap();
+                        let job = JobEntity::find()
+                            .filter(JobColumn::Id.eq(job_id))
+                            .one(db)
+                            .await;
+                        match job {
+                            Err(err) => {
+                                eprintln!("Error getting Job: {:?}", err);
+                                continue;
                             }
-                        },
+                            Ok(job_optional) => match job_optional {
+                                None => eprintln!("Job not found"),
+                                Some(job) => {
+                                    task::spawn(async move {
+                                        let _permit = permit;
+                                        process_job(job).await;
+                                    });
+                                }
+                            },
+                        }
                     }
                 }
             }
         }
-    }
+    });
+    
+      axum::serve(listener, app).await.unwrap();  
+      println!("transfer worker running on port 3002");
+    
 }
