@@ -185,9 +185,7 @@ const FileRow = ({ driveId, item }: FileRowProps) => {
             <MenuItem onClick={() => setClipboard(item.id, item.name, driveId, "copy")}>
               Copy
             </MenuItem>
-            <MenuItem onClick={() => setClipboard(item.id, item.name, driveId, "move")}>
-              Move
-            </MenuItem>
+
             <MenuItem danger onClick={() => console.log("delete", item)}>
               Delete
             </MenuItem>
