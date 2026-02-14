@@ -5,10 +5,10 @@ use axum::{
 };
 use common::{db_connect::init_db, jwt_config::Claims};
 use entities::{
-    cloud_account::Column as CloudColumn,
-    job::{Column as JobColumn, Entity as JobEntity},
+    cloud_account::{Column as CloudColumn, Entity as CloudAccountEntity},
+    job::{self, Column as JobColumn, Entity as JobEntity},
 };
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect, RelationTrait};
 use serde_json::json;
 
 use crate::utils::app_errors::AppError;
@@ -17,7 +17,9 @@ pub async fn get_jobs(Extension(claims): Extension<Claims>) -> Result<Response, 
     let db = init_db().await;
     match JobEntity::find()
         .filter(JobColumn::UserId.eq(claims.id))
-        // .left_join(_)
+        .join(
+            sea_orm::JoinType::LeftJoin, job::Relation::CloudAccount1.def())
+        .join(sea_orm::JoinType::LeftJoin, job::Relation::CloudAccount2.def())
         .all(db)
         .await
     {

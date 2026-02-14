@@ -31,7 +31,7 @@ async fn main() {
     let state = AppState { redis, db };
     tokio::spawn(listen(JOB_BUS.clone()));
     tokio::spawn(async {
-        let mut ticker = interval(Duration::from_secs(30));
+        let mut ticker = interval(Duration::from_secs(10));
         loop {
             ticker.tick().await;
             let client = reqwest::Client::new();
