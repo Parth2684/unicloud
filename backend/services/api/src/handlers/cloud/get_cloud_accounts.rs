@@ -58,6 +58,7 @@ pub async fn get_cloud_accounts(
     let google_accounts = CloudAccountEntity::find()
         .filter(CloudAccountColumn::UserId.eq(claims.id))
         .filter(CloudAccountColumn::Provider.eq(Provider::Google))
+        .filter(CloudAccountColumn::IsDeleted.eq(false))
         .all(db)
         .await;
 

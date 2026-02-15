@@ -77,9 +77,11 @@ pub async fn copy_file_or_folder(
                 CloudAccountEntity::find()
                     .filter(CloudAccountColumn::Id.eq(from_id))
                     .filter(CloudAccountColumn::UserId.eq(claims.id))
+                    .filter(CloudAccountColumn::IsDeleted.eq(false))
                     .one(db),
                 CloudAccountEntity::find()
                     .filter(CloudAccountColumn::Id.eq(to_id))
+                    .filter(CloudAccountColumn::IsDeleted.eq(false))
                     .filter(CloudAccountColumn::UserId.eq(claims.id))
                     .one(db),
                 JobEntity::find()

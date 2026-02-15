@@ -59,6 +59,7 @@ export type CloudActions = {
   setClipboard: (id: string, name: string, drive_id: string, operation: "copy" | "move") => void;
   clearClipboard: () => void;
   pasteHere: (from_drive: string, from_file_id: string, to_drive: string, to_folder_id: string) => Promise<void>;
+  deleteDrive: (drive_id: string, isExpired: boolean) => Promise<void>
 };
 
 

@@ -26,6 +26,7 @@ pub struct Model {
     pub token_expired: bool,
     pub updated_at: Option<DateTime>,
     pub image: Option<String>,
+    pub is_deleted: bool,
     #[sea_orm(
         belongs_to,
         from = "user_id",

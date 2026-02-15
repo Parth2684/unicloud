@@ -10,7 +10,6 @@ use sea_orm::DatabaseConnection;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 use tokio::{sync::Mutex as TokioMutex, time::interval};
 
-
 mod handlers;
 mod socket_upgrade;
 
@@ -35,17 +34,27 @@ async fn main() {
         loop {
             ticker.tick().await;
             let client = reqwest::Client::new();
-            println!("{:?}", client.get(format!("{}/", &ENVS.transfer)).send().await.ok());
-            println!("{:?}", client.get(format!("{}/", &ENVS.refresh)).send().await.ok());
+            println!(
+                "{:?}",
+                client.get(format!("{}/", &ENVS.transfer)).send().await.ok()
+            );
+            println!(
+                "{:?}",
+                client.get(format!("{}/", &ENVS.refresh)).send().await.ok()
+            );
         }
     });
-    
+
     let app: Router<()> = Router::new()
         .route("/", get(|| async { "Noice" }))
         .route("/ws", get(ws_handler))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", &ENVS.port)).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", &ENVS.port))
+        .await
+        .unwrap();
     println!("Server running on port {}", &ENVS.port);
-    axum::serve(listener, app.into_make_service()).await.unwrap();
+    axum::serve(listener, app.into_make_service())
+        .await
+        .unwrap();
 }

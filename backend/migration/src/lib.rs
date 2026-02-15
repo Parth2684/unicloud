@@ -9,6 +9,7 @@ mod m20251126_165431_add_refresh_token_expired_field_to_cloud_accounts;
 mod m20251210_150222_add_image_to_cloud_account;
 mod m20251225_162600_add_transfer_table;
 mod m20260130_160138_edit_permission_to_string_from_uuid;
+mod m20260215_132415_add_soft_delete_on_cloud_account;
 
 pub struct Migrator;
 
@@ -25,6 +26,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20251210_150222_add_image_to_cloud_account::Migration),
             Box::new(m20251225_162600_add_transfer_table::Migration),
             Box::new(m20260130_160138_edit_permission_to_string_from_uuid::Migration),
+            Box::new(m20260215_132415_add_soft_delete_on_cloud_account::Migration),
         ]
     }
 }

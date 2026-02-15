@@ -18,8 +18,13 @@ pub async fn get_jobs(Extension(claims): Extension<Claims>) -> Result<Response, 
     match JobEntity::find()
         .filter(JobColumn::UserId.eq(claims.id))
         .join(
-            sea_orm::JoinType::LeftJoin, job::Relation::CloudAccount1.def())
-        .join(sea_orm::JoinType::LeftJoin, job::Relation::CloudAccount2.def())
+            sea_orm::JoinType::LeftJoin,
+            job::Relation::CloudAccount1.def(),
+        )
+        .join(
+            sea_orm::JoinType::LeftJoin,
+            job::Relation::CloudAccount2.def(),
+        )
         .all(db)
         .await
     {

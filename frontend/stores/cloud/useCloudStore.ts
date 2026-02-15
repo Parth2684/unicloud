@@ -86,11 +86,29 @@ export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
         from_drive,
         from_file_id,
         to_drive,
-        to_folder_id
-      })
-      toast.success(res.data.message)
+        to_folder_id,
+      });
+      toast.success(res.data.message);
     } catch (error) {
-      console.error(error)
+      console.error(error);
+      if (error instanceof AxiosError && error.response?.data) {
+        toast.error(error.response.data.message);
+      }
+    }
+  },
+
+  deleteDrive: async (drive_id: string, isExpired: boolean) => {
+    try {
+      const res = await axiosInstance.delete(`/cloud/google/delete-drive/${drive_id}`);
+      toast.success(res.data.message);
+        set((state) => ({
+          errorCloudAccounts: state.errorCloudAccounts?.filter((acc) => acc.id !== drive_id),
+          successCloudAccounts: state.successCloudAccounts?.filter(
+            (acc) => acc.info.id !== drive_id,
+          )
+        }));
+      } catch (error) {
+      console.error(error);
       if (error instanceof AxiosError && error.response?.data) {
         toast.error(error.response.data.message);
       }

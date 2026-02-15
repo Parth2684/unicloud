@@ -6,6 +6,7 @@ import Link from "next/link";
 import { BACKEND_URL } from "../lib/export";
 import { Provider, SuccessCloudAccount, ErrorCloudAccount } from "../stores/cloud/types";
 import { formatBytes, getUsagePercentage } from "../utils/format";
+import { Trash2 } from "lucide-react";
 
 export const HomeComponent = () => {
   const { setClouds, successCloudAccounts, errorCloudAccounts, loading } = useCloudStore();
@@ -74,15 +75,26 @@ const CloudAccountCard = ({ account }: CloudAccountCardProps) => {
   const usage = formatBytes(storageQuota.usageInDrive);
   const limitLabel = storageQuota.limit ? formatBytes(storageQuota.limit) : null;
   const percentage = getUsagePercentage(storageQuota.usage, storageQuota.limit ?? null);
-
+  const { deleteDrive } = useCloudStore();
   const providerLabel = info.provider;
   const avatarInitial = info.email?.[0]?.toUpperCase() ?? providerLabel;
 
   return (
     <Link
       href={`/google/${info.id}`}
-      className="group flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+      className="relative group flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
     >
+      <button
+        onClick={async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          await deleteDrive(info.id, false);
+        }}
+        className="absolute right-3 top-3 z-10 rounded-md p-1.5 text-zinc-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+        aria-label="Delete cloud account"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-100">
           <span className="truncate">{avatarInitial}</span>
@@ -120,12 +132,23 @@ type ErrorAccountCardProps = {
 
 const ErrorAccountCard = ({ account }: ErrorAccountCardProps) => {
   const providerLabel = account.provider;
-
+  const { deleteDrive } = useCloudStore();
   return (
     <Link
       href={`${BACKEND_URL}/auth/drive`}
-      className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left text-amber-900 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-50"
+      className="relative flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left text-amber-900 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-50"
     >
+      <button
+        onClick={async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          await deleteDrive(account.id, true);
+        }}
+        className="absolute right-3 top-3 z-10 rounded-md p-1.5 text-zinc-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+        aria-label="Delete cloud account"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-sm font-medium">{account.email}</span>

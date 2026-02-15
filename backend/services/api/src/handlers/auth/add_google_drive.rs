@@ -237,6 +237,7 @@ pub async fn drive_auth_callback(
                     cloud.provider = Set(entities::sea_orm_active_enums::Provider::Google);
                     cloud.user_id = Set(claims.id);
                     cloud.image = Set(image);
+                    cloud.is_deleted = Set(false);  
                     cloud.token_expired = Set(false);
                     let account: CloudAccountModel = match cloud.update(db).await {
                         Ok(acc) => acc,
@@ -322,6 +323,7 @@ pub async fn drive_auth_callback(
                     cloud.provider = Set(entities::sea_orm_active_enums::Provider::Google);
                     cloud.user_id = Set(claims.id);
                     cloud.image = Set(image);
+                    cloud.is_deleted = Set(false);
                     cloud.token_expired = Set(false);
 
                     match cloud.update(db).await {

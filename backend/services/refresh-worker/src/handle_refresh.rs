@@ -41,6 +41,7 @@ pub async fn handle_refresh(id: Uuid, db: &DatabaseConnection) -> bool {
 
     let cloud_accs = CloudAccountEntity::find()
         .filter(CloudAccountColumn::UserId.eq(id))
+        .filter(CloudAccountColumn::IsDeleted.eq(false))
         .all(db)
         .await;
     let cloud_accs = match cloud_accs {
