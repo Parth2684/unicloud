@@ -40,6 +40,7 @@ pub struct CopyInputs {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FileDetail {
+    name: String,
     mime_type: String,
     size: Option<String>,
 }
@@ -192,7 +193,7 @@ pub async fn copy_file_or_folder(
                                     let client = Client::new();
                                     let res = client
                                     .get(format!(
-                                      "https://www.googleapis.com/drive/v3/files/{}?fields=mimeType,size&supportsAllDrives=true",
+                                      "https://www.googleapis.com/drive/v3/files/{}?fields=mimeType,size,name&supportsAllDrives=true",
                                       payload.from_file_id
                                     ))
                                     .bearer_auth(token)
@@ -251,6 +252,7 @@ pub async fn copy_file_or_folder(
                                                         transfer_type: Set(
                                                             TransferType::GoogleToGoogle,
                                                         ),
+                                                        name: Set(details.name),
                                                         ..Default::default()
                                                     },
                                                     db,
