@@ -17,10 +17,9 @@
 
 *   **Backend:**
     *   Rust
-    *   Axum (Web Framework)
-    *   Tokio-Tungstenite (WebSocket Framework)
+    *   Axum (HTTP and WebSocket Framework)
     *   SeaORM (ORM for database interaction and migrations)
-    *   JSON Web Tokens (JWT) for authentication
+    *   JSON Web Tokens (JWT) + Cookies for authentication
     *   Heavy Oauth2.0 written from scratch 
 *   **Frontend:**
     *   Next.js
@@ -85,6 +84,19 @@ bun run dev
 ```
 
 After starting both the backend and frontend, access the application in your web browser, typically at `http://localhost:3000`.
+
+### Running Everything in one go
+
+Install a Procfile-based process manager like nf or foreman or goreman `Prefered By Me is goreman`
+
+From root directory: 
+```bash
+goreman start
+# or
+foreman start
+# or
+nf start
+
 
 ## 🔧 How It Works
 
