@@ -1,4 +1,4 @@
-use axum::extract::ws::{Message, WebSocket};
+use axum::extract::ws::{CloseFrame, Message, Utf8Bytes, WebSocket};
 use common::jwt_config::decode_jwt;
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use redis::AsyncTypedCommands;
@@ -9,7 +9,7 @@ use entities::{
 };
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::{collections::HashMap, sync::Arc};
-use tokio::sync::Mutex;
+use tokio::sync::mpsc;
 
 use crate::{AppState, JOB_BUS, handlers::helpers::subscriber::subscribe_job};
 
@@ -27,8 +27,74 @@ pub async fn handle_socket(socket: WebSocket, state: AppState, params: HashMap<S
         }
     };
 
-    let (sender, mut receiver) = socket.split();
-    let sender = Arc::new(Mutex::new(sender));
+    let (mut sender, mut receiver) = socket.split();
+    let (tx, mut rx) = mpsc::unbounded_channel::<String>();
+    // tokio::spawn(async move {
+    //     while let Some(msg) = rx.recv().await {
+    //         if sender.send(Message::Text(msg.into())).await.is_err() {
+    //             break;
+    //         }
+    //     }
+    // });
+    tokio::spawn(async move {
+        while let Some(msg) = rx.recv().await {
+            match sender.send(Message::Text(msg.into())).await {
+                Err(err) => {
+                    eprintln!("{err:?}");
+                    break
+                }
+                Ok(_) => continue
+            } 
+        } 
+    });
+    // if sender
+    //     .send(Message::Text("ws-connected".into()))
+    //     .await
+    //     .is_err()
+    // {
+    //     eprintln!("❌ Failed to send initial WS message");
+    //     return;
+    // }
+    if let Ok(jobs) = JobEntity::find()
+        .filter(JobColumn::UserId.eq(claims.id))
+        .filter(JobColumn::Status.eq(Status::Running))
+        .all(state.db)
+        .await
+    {
+        for job in jobs {
+            let job_id = job.id.to_string();
+            let tx_clone = tx.clone();
+
+            // Send initial snapshot immediately
+            let snapshot = serde_json::json!({
+                "type": "snapshot",
+                "job_id": job_id,
+                "stage": job.status
+            });
+            let _ = tx_clone.send(snapshot.to_string());
+
+            tokio::spawn(async move {
+                let mut rx_bus = subscribe_job(&JOB_BUS, &job_id).await;
+                
+                while let Ok(msg) = rx_bus.recv().await {
+                    println!("{:?}", msg);
+                    if tx_clone.send(msg.clone()).is_err() {
+                        break;
+                    }
+
+                    // Stop listening when job completes
+                    if let Ok(val) = serde_json::from_str::<serde_json::Value>(&msg) {
+                        if matches!(
+                            val.get("stage").and_then(|v| v.as_str()),
+                            Some("Completed") | Some("Failed")
+                        ) {
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+    }
 
     while let Some(Ok(msg)) = receiver.next().await {
         if let Message::Text(text) = msg {
@@ -46,45 +112,9 @@ pub async fn handle_socket(socket: WebSocket, state: AppState, params: HashMap<S
                         }
                     }
                 }
-
-                "Transfer Status" => {
-                    let jobs = JobEntity::find()
-                        .filter(JobColumn::UserId.eq(claims.id))
-                        .filter(JobColumn::Status.eq(Status::Running))
-                        .all(state.db)
-                        .await;
-
-                    if let Ok(jobs) = jobs {
-                        for job in jobs {
-                            let job_id = job.id.to_string();
-                            let sender = sender.clone();
-                            tokio::spawn(async move {
-                                let mut rx = subscribe_job(&JOB_BUS, &job_id).await;
-
-                                while let Ok(msg) = rx.recv().await {
-                                    let mut ws = sender.lock().await;
-                                    if ws.send(Message::Text(msg.clone().into())).await.is_err() {
-                                        break;
-                                    }
-
-                                    if let Ok(val) = serde_json::from_str::<serde_json::Value>(&msg)
-                                    {
-                                        if matches!(
-                                            val.get("stage").and_then(|v| v.as_str()),
-                                            Some("Completed") | Some("Failed")
-                                        ) {
-                                            JOB_BUS.lock().await.remove(&job_id);
-                                            break;
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    }
-                }
-
                 _ => {}
             }
         }
     }
+    
 }

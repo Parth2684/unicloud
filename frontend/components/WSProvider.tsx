@@ -26,7 +26,6 @@ export default function WSProvider({ children }: { children: ReactNode }) {
     const sendRefresh = () => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         sendWS("Refresh Token");
-        sendWS("Transfer Status");
       }
     };
 

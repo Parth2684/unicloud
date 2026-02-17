@@ -29,21 +29,6 @@ async fn main() {
 
     let state = AppState { redis, db };
     tokio::spawn(listen(JOB_BUS.clone()));
-    tokio::spawn(async {
-        let mut ticker = interval(Duration::from_secs(10));
-        loop {
-            ticker.tick().await;
-            let client = reqwest::Client::new();
-            println!(
-                "{:?}",
-                client.get(format!("{}/", &ENVS.transfer)).send().await.ok()
-            );
-            println!(
-                "{:?}",
-                client.get(format!("{}/", &ENVS.refresh)).send().await.ok()
-            );
-        }
-    });
 
     let app: Router<()> = Router::new()
         .route("/", get(|| async { "Noice" }))

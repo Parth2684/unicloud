@@ -1,9 +1,12 @@
+use std::time::Duration;
+
 use crate::routers::{
     auth_router::auth_routes, cloud_router::cloud_router, user_router::user_router,
 };
 use axum::{Router, http::HeaderValue, routing::get};
 use common::export_envs::ENVS;
 use http::Method;
+use tokio::time::interval;
 use tower_http::cors::{AllowHeaders, CorsLayer};
 
 mod handlers;
@@ -12,6 +15,15 @@ mod utils;
 
 #[tokio::main]
 async fn main() {
+    tokio::spawn(async {
+        let mut ticker = interval(Duration::from_secs(120));
+        loop {
+            ticker.tick().await;
+            let client = reqwest::Client::new();
+            client.get(format!("{}/", &ENVS.transfer)).send().await.ok();
+            client.get(format!("{}/", &ENVS.refresh)).send().await.ok();
+        }
+    });
     let cors = CorsLayer::new()
         .allow_origin(
             ENVS.frontend_url
