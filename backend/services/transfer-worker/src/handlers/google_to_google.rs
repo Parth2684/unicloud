@@ -20,7 +20,9 @@ use entities::{
     sea_orm_active_enums::Status,
 };
 use redis::AsyncTypedCommands;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set, sea_query::prelude::Utc,
+};
 
 pub async fn copy_google_to_google(job: JobModel) {
     let start = Instant::now();
@@ -330,15 +332,10 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                                 redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
                                                                                             }
                                                                                             Ok(_) => {
-                                                                                                let elapsed = start.elapsed();
-                                                                                                   println!(
-                                                                                                       "[TIMING] job {} finished in {:.2?}",
-                                                                                                       job.id,
-                                                                                                       elapsed
-                                                                                                   );
                                                                                                 progress_pub(&job.user_id, &job.id, JobStage::Finalizing, "Removing permissions of the destination account from the source file", 92).await;
                                                                                                 remove_permission(id, from_file_id, &token, &job.id).await;
                                                                                                 redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
+                                                                                                let elapsed = start.elapsed().as_millis() as i32;
                                                                                                 let remaining_overall = quo.remaining_quota - size;
 
                                                                                                 let mut edit_quota: QuotaActive = quo.clone().into();
@@ -356,6 +353,8 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                                 edit_quota.remaining_quota = Set(remaining_overall);
                                                                                                 let mut edit_job: JobActive = job.clone().into();
                                                                                                 edit_job.fail_reason = Set(None);
+                                                                                                edit_job.time = Set(Some(elapsed));
+                                                                                                edit_job.finished_at = Set(Some(Utc::now().naive_utc()));
                                                                                                 edit_job.status = Set(Status::Completed);
                                                                                                 let (_, _, _) = tokio::join!(progress_pub(&job.user_id, &job.id, JobStage::Completed, "Completed The Job Successfully", 100), edit_job.update(db), edit_quota.update(db));
                                                                                             }

@@ -1,4 +1,4 @@
-use sea_orm_migration::{prelude::*};
+use sea_orm_migration::prelude::*;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -14,9 +14,9 @@ impl MigrationTrait for Migration {
                     .table(Job::Table)
                     .add_column_if_not_exists(
                         ColumnDef::new(Job::Name)
-                        .string()
-                        .not_null()
-                        .default(String::from("Job"))
+                            .string()
+                            .not_null()
+                            .default(String::from("Job")),
                     )
                     .to_owned(),
             )
@@ -27,7 +27,12 @@ impl MigrationTrait for Migration {
         // Replace the sample below with your own migration scripts
 
         manager
-            .alter_table(Table::alter().table(Job::Table).drop_column_if_exists(Job::Name).to_owned())
+            .alter_table(
+                Table::alter()
+                    .table(Job::Table)
+                    .drop_column_if_exists(Job::Name)
+                    .to_owned(),
+            )
             .await
     }
 }
@@ -35,5 +40,5 @@ impl MigrationTrait for Migration {
 #[derive(DeriveIden)]
 enum Job {
     Table,
-    Name
+    Name,
 }

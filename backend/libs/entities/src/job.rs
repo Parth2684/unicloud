@@ -27,6 +27,8 @@ pub struct Model {
     pub fail_reason: Option<String>,
     pub permission_id: String,
     pub name: String,
+    pub time: Option<i32>,
+    pub finished_at: Option<DateTime>,
     #[sea_orm(
         belongs_to,
         relation_enum = "CloudAccount2",

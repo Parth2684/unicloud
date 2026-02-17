@@ -6,6 +6,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use chrono::Utc;
 use common::{
     db_connect::init_db, encrypt::decrypt, jwt_config::Claims, redis_connection::init_redis,
 };
@@ -253,6 +254,7 @@ pub async fn copy_file_or_folder(
                                                             TransferType::GoogleToGoogle,
                                                         ),
                                                         name: Set(details.name),
+                                                        created_at: Set(Utc::now().naive_utc()),
                                                         ..Default::default()
                                                     },
                                                     db,
