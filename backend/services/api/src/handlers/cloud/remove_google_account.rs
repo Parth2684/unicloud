@@ -38,6 +38,7 @@ pub async fn remove_google_drive(
             Some(acc) => {
                 let mut del_acc: CloudActive = acc.into();
                 del_acc.is_deleted = Set(true);
+                del_acc.refresh_token = Set(None);
                 match del_acc.update(db).await {
                     Err(err) => {
                         eprintln!("{err:?}");

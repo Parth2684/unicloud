@@ -116,7 +116,7 @@ const FileRow = ({ driveId, item }: FileRowProps) => {
 
   const modifiedDate = item.modifiedTime || item.createdTime;
   const modifiedLabel = modifiedDate ? new Date(modifiedDate).toLocaleDateString() : "--";
-  const { setClipboard } = useCloudStore();
+  const { setClipboard, deleteFile } = useCloudStore();
 
   // close menu on outside click
   useEffect(() => {
@@ -182,11 +182,17 @@ const FileRow = ({ driveId, item }: FileRowProps) => {
             className="absolute right-0 z-50 mt-2 w-36 rounded-md border
               bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
           >
-            <MenuItem onClick={() => setClipboard(item.id, item.name, driveId, "copy")}>
+            <MenuItem onClick={() => {
+              setClipboard(item.id, item.name, driveId, "copy")
+              setOpen((v) => !v)
+            }}>
               Copy
             </MenuItem>
 
-            <MenuItem danger onClick={() => console.log("delete", item)}>
+            <MenuItem danger onClick={async () => {
+              setOpen((v) => !v)
+              await deleteFile(driveId, item.id)
+            }}>
               Delete
             </MenuItem>
           </div>
