@@ -6,7 +6,7 @@ import { Spinner } from "./ui/spinner";
 import type { DriveFile } from "../stores/cloud/types";
 import { formatBytes, isFolder } from "../utils/format";
 import { useRouter } from "next/navigation";
-import { sendWS } from '../lib/ws-client';
+import { sendWS } from "../lib/ws-client";
 
 type DriveComponentProps = {
   drive_id: string;
@@ -14,7 +14,8 @@ type DriveComponentProps = {
 };
 
 export const DriveComponent = ({ drive_id, folder_id }: DriveComponentProps) => {
-  const { setCurrentGoogleFolder, drive, loading, clipboard, clearClipboard, pasteHere } = useCloudStore();
+  const { setCurrentGoogleFolder, drive, loading, clipboard, clearClipboard, pasteHere } =
+    useCloudStore();
 
   useEffect(() => {
     setCurrentGoogleFolder(drive_id, folder_id);
@@ -50,14 +51,13 @@ export const DriveComponent = ({ drive_id, folder_id }: DriveComponentProps) => 
                 clearClipboard();
                 setInterval(() => {
                   sendWS("Transfer Status");
-                }, 500)
+                }, 500);
               }}
               className="rounded bg-sky-600 px-3 py-1 text-white hover:bg-sky-700"
             >
               Paste
             </button>
           )}
-
         </div>
       </div>
 
@@ -182,17 +182,22 @@ const FileRow = ({ driveId, item }: FileRowProps) => {
             className="absolute right-0 z-50 mt-2 w-36 rounded-md border
               bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
           >
-            <MenuItem onClick={() => {
-              setClipboard(item.id, item.name, driveId, "copy")
-              setOpen((v) => !v)
-            }}>
+            <MenuItem
+              onClick={() => {
+                setClipboard(item.id, item.name, driveId, "copy");
+                setOpen((v) => !v);
+              }}
+            >
               Copy
             </MenuItem>
 
-            <MenuItem danger onClick={async () => {
-              setOpen((v) => !v)
-              await deleteFile(driveId, item.id)
-            }}>
+            <MenuItem
+              danger
+              onClick={async () => {
+                setOpen((v) => !v);
+                await deleteFile(driveId, item.id);
+              }}
+            >
               Delete
             </MenuItem>
           </div>

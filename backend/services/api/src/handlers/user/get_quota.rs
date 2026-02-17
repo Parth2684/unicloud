@@ -1,10 +1,13 @@
 use axum::{
     Extension, Json,
+    http::StatusCode,
     response::{IntoResponse, Response},
-    http::StatusCode
 };
 use common::{db_connect::init_db, jwt_config::Claims};
-use entities::{users::{Entity as UserEntity, Column as UserColumn, Relation as UserRelation}, quota::{Column as QuotaColumn}};
+use entities::{
+    quota::Column as QuotaColumn,
+    users::{Column as UserColumn, Entity as UserEntity, Relation as UserRelation},
+};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect, RelationTrait};
 use serde_json::json;
 
@@ -30,10 +33,16 @@ pub async fn get_user_info(Extension(claims): Extension<Claims>) -> Result<Respo
         .one(db)
         .await;
     if let Ok(Some(user_info)) = info {
-        Ok((StatusCode::OK, Json(json!({
-            "user_info": user_info,
-        }))).into_response())
-    }else {
-        Err(AppError::Internal(Some(String::from("Error finding your info"))))
+        Ok((
+            StatusCode::OK,
+            Json(json!({
+                "user_info": user_info,
+            })),
+        )
+            .into_response())
+    } else {
+        Err(AppError::Internal(Some(String::from(
+            "Error finding your info",
+        ))))
     }
 }

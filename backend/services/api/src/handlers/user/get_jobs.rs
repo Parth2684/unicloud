@@ -5,12 +5,12 @@ use axum::{
 };
 use common::{db_connect::init_db, jwt_config::Claims};
 use entities::{
-    cloud_account::{Column as CloudColumn},
+    cloud_account::Column as CloudColumn,
     job::{Column as JobColumn, Entity as JobEntity, Relation as JobRelation},
 };
 use sea_orm::{
-    ColumnTrait, EntityTrait, QueryFilter,
-    QuerySelect, RelationTrait, prelude::Expr, sea_query::Alias,
+    ColumnTrait, EntityTrait, QueryFilter, QuerySelect, RelationTrait, prelude::Expr,
+    sea_query::Alias,
 };
 use serde_json::json;
 

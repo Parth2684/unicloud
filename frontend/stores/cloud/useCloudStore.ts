@@ -102,9 +102,7 @@ export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
       const res = await axiosInstance.delete(`/cloud/google/delete-drive/${drive_id}`);
       set((state) => ({
         errorCloudAccounts: state.errorCloudAccounts?.filter((acc) => acc.id !== drive_id),
-        successCloudAccounts: state.successCloudAccounts?.filter(
-          (acc) => acc.info.id !== drive_id,
-        )
+        successCloudAccounts: state.successCloudAccounts?.filter((acc) => acc.info.id !== drive_id),
       }));
     } catch (error) {
       console.error(error);
@@ -113,18 +111,18 @@ export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
       }
     }
   },
-  
+
   deleteFile: async (drive_id: string, file_id: string) => {
     try {
-      const res = await axiosInstance.delete(`/cloud/google/delete-file/${drive_id}/${file_id}`)
+      const res = await axiosInstance.delete(`/cloud/google/delete-file/${drive_id}/${file_id}`);
       set((state) => ({
-        drive: state.drive?.filter(file => file.id !== file_id)
-      }))
+        drive: state.drive?.filter((file) => file.id !== file_id),
+      }));
     } catch (error) {
-      console.error(error)
+      console.error(error);
       if (error instanceof AxiosError && error.response?.data) {
         toast.error(error.response.data.message);
       }
     }
-  }
+  },
 }));

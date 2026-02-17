@@ -39,8 +39,8 @@ export interface SharedDrive {
 export interface ClipboardItem {
   id: string;
   name: string;
-  drive_id: string,
-  operation: "copy" | "move" 
+  drive_id: string;
+  operation: "copy" | "move";
 }
 
 export type CloudState = {
@@ -49,7 +49,7 @@ export type CloudState = {
   errorCloudAccounts: ErrorCloudAccount[] | null;
   drive: DriveFile[] | null;
   sharedDrives: SharedDrive[] | null;
-  clipboard: ClipboardItem | null
+  clipboard: ClipboardItem | null;
 };
 
 export type CloudActions = {
@@ -58,7 +58,12 @@ export type CloudActions = {
   setSharedDrives: (drive_id: string) => Promise<void>;
   setClipboard: (id: string, name: string, drive_id: string, operation: "copy" | "move") => void;
   clearClipboard: () => void;
-  pasteHere: (from_drive: string, from_file_id: string, to_drive: string, to_folder_id: string) => Promise<void>;
-  deleteDrive: (drive_id: string, isExpired: boolean) => Promise<void>,
-  deleteFile: (drive_id: string, file_id: string) => Promise<void>
+  pasteHere: (
+    from_drive: string,
+    from_file_id: string,
+    to_drive: string,
+    to_folder_id: string,
+  ) => Promise<void>;
+  deleteDrive: (drive_id: string, isExpired: boolean) => Promise<void>;
+  deleteFile: (drive_id: string, file_id: string) => Promise<void>;
 };

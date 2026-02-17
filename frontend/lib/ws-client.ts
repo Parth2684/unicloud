@@ -5,10 +5,10 @@ let socket: WebSocket | null = null;
 export function getSocket(token: string | null) {
   if (typeof window === "undefined") return null;
 
-  if (socket && (
-    socket.readyState === WebSocket.OPEN ||
-    socket.readyState === WebSocket.CONNECTING
-  )) {
+  if (
+    socket &&
+    (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
+  ) {
     return socket;
   }
 
