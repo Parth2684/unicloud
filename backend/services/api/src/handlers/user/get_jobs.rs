@@ -45,6 +45,7 @@ pub async fn get_jobs(Extension(claims): Extension<Claims>) -> Result<Response, 
         .column(JobColumn::FromDrive)
         .column(JobColumn::Time)
         .column(JobColumn::FinishedAt)
+        .column(JobColumn::Name)
         .column_as(
             Expr::col((Alias::new("source_account"), CloudColumn::Provider)),
             "source_provider",

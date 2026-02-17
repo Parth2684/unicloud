@@ -15,7 +15,7 @@ use entities::{
         ActiveModel as CloudAccountActive, Column as CloudAccountColumn,
         Entity as CloudAccountEntity,
     },
-    sea_orm_active_enums::Status,
+    sea_orm_active_enums::{Provider, Status},
 };
 use entities::{
     job::{ActiveModel as JobActive, Column as JobColumn, Entity as JobEntity},
@@ -80,11 +80,13 @@ pub async fn copy_file_or_folder(
                     .filter(CloudAccountColumn::Id.eq(from_id))
                     .filter(CloudAccountColumn::UserId.eq(claims.id))
                     .filter(CloudAccountColumn::IsDeleted.eq(false))
+                    .filter(CloudAccountColumn::Provider.eq(Provider::Google))
                     .one(db),
                 CloudAccountEntity::find()
                     .filter(CloudAccountColumn::Id.eq(to_id))
                     .filter(CloudAccountColumn::IsDeleted.eq(false))
                     .filter(CloudAccountColumn::UserId.eq(claims.id))
+                    .filter(CloudAccountColumn::Provider.eq(Provider::Google))
                     .one(db),
                 JobEntity::find()
                     .filter(JobColumn::UserId.eq(claims.id))

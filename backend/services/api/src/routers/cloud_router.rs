@@ -29,5 +29,6 @@ pub fn cloud_router() -> Router {
             "/google/delete-drive/{drive_id}",
             delete(remove_google_drive),
         )
+        .route("/google/delete-file/{drive_id}/{file_id}", delete(delete_file_google))
         .layer(middleware::from_fn(auth_middleware))
 }

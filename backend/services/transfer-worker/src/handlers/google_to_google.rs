@@ -349,7 +349,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                                     edit_quota.add_on_quota = Set(0);
                                                                                                     edit_quota.free_quota = Set(quo.free_quota - used_from_free);
                                                                                                 }
-
+                                                                                                edit_quota.used_quota = Set(quo.used_quota + size);
                                                                                                 edit_quota.remaining_quota = Set(remaining_overall);
                                                                                                 let mut edit_job: JobActive = job.clone().into();
                                                                                                 edit_job.fail_reason = Set(None);
