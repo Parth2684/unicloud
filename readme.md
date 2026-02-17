@@ -96,7 +96,7 @@ goreman start
 foreman start
 # or
 nf start
-
+```bash
 
 ## 🔧 How It Works
 
