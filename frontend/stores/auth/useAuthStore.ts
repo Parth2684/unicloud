@@ -12,8 +12,9 @@ export const useAuthStore = create<AuthState & AuthAction>((set, get) => ({
     set({ authUser: user, isLoggedIn: true });
   },
 
-  logout: () => {
+  logout: async () => {
     set({ authUser: null, isLoggedIn: false });
+    await axiosInstance.post("/auth/logout")
   },
 
   setToken: async () => {

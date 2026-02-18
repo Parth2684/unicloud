@@ -13,33 +13,6 @@ export interface DriveFile {
   modifiedTime?: string;
 }
 
-export enum Status {
-  Pending,
-  Running,
-  Complete,
-  Failed
-}
-export interface Job {
-  created_at: Date,
-  destination_email: string,
-  destination_image?: string,
-  fail_reason?: string,
-  finished_at?: Date,
-  from_drive?: String,
-  id: String,
-  is_folder: boolean,
-  link: string | null,
-  link_type: string | null,
-  name: string,
-  permission_id?: string,
-  size: number,
-  source_email: string | null,
-  source_image: string | null,
-  status: Status,
-  time: number,
-        
-}
-
 export interface ErrorCloudAccount {
   id: string;
   email: string;

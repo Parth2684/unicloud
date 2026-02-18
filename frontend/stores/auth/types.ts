@@ -11,8 +11,9 @@ export type AuthState = {
   token: string | null;
 };
 
+
 export type AuthAction = {
   setUser: (user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   setToken: () => Promise<void>;
 };
