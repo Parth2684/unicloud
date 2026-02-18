@@ -57,7 +57,7 @@ pub async fn handle_socket(socket: WebSocket, state: AppState, params: HashMap<S
     // }
     if let Ok(jobs) = JobEntity::find()
         .filter(JobColumn::UserId.eq(claims.id))
-        .filter(JobColumn::Status.eq(Status::Running))
+        .filter(JobColumn::Status.eq_any(vec![Status::Pending, Status::Running]))
         .all(state.db)
         .await
     {

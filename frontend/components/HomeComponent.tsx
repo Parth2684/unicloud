@@ -77,7 +77,7 @@ const CloudAccountCard = ({ account }: CloudAccountCardProps) => {
   const percentage = getUsagePercentage(storageQuota.usage, storageQuota.limit ?? null);
   const { deleteDrive } = useCloudStore();
   const providerLabel = info.provider;
-  const avatarInitial = info.email?.[0]?.toUpperCase() ?? providerLabel;
+  const avatarInitial = info.image;
 
   return (
     <Link
@@ -97,7 +97,7 @@ const CloudAccountCard = ({ account }: CloudAccountCardProps) => {
       </button>
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-100">
-          <span className="truncate">{avatarInitial}</span>
+          { avatarInitial ? <img className="truncate" src={avatarInitial}></img> : <span className="truncate">{info.email[0].toUpperCase()}</span> }
         </div>
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
