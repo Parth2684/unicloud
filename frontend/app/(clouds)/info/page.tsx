@@ -1,12 +1,17 @@
 "use client";
 
-import { Key, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useUserStore } from "../../../stores/user/useUserStore";
 import { Status, TransferType } from "../../../stores/user/types";
 import { formatBytes } from '../../../utils/format';
 
 export default function InfoPage() {
-  const { userInfo, jobs, setUserInfo, setJobs } = useUserStore();
+  const { userInfo, jobs, setUserInfo, setJobs, editJob } = useUserStore();
+  const [editingJobId, setEditingJobId] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    jobId: string;
+    newStatus: Status;
+  } | null>(null);
 
   useEffect(() => {
     setUserInfo();
@@ -28,21 +33,6 @@ export default function InfoPage() {
     }
   };
 
-  const getStatusText = (status: Status) => {
-    switch (status) {
-      case Status.Pending:
-        return "Pending";
-      case Status.Running:
-        return "Running";
-      case Status.Complete:
-        return "Complete";
-      case Status.Failed:
-        return "Failed";
-      default:
-        return "Unknown";
-    }
-  };
-
   const getTransferTypeText = (type: TransferType) => {
     switch (type) {
       case TransferType.GoogleToGoogle:
@@ -58,6 +48,10 @@ export default function InfoPage() {
 
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleString();
+  };
+
+  const canEditJob = (status: Status) => {
+    return status === Status.Pending || status === Status.Running;
   };
 
   if (!userInfo) {
@@ -125,6 +119,7 @@ export default function InfoPage() {
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">Transfer Jobs</h2>
           </div>
+          <h3 className='text-center'>You cannot change the status of a job which is completed or failed. Please keep that in mind while changing status of jobs</h3>
           <div className="px-6 py-4">
             {!jobs || jobs.length === 0 ? (
               <p className="text-gray-500 text-center py-8">No jobs found</p>
@@ -158,12 +153,16 @@ export default function InfoPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {jobs.map((job) => (
-                      <tr key={job.id as Key} className="hover:bg-gray-50">
+                      <tr key={job.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {job.name}
-                          {job.is_folder && (
+                          {job.is_folder ? (
                             <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                               Folder
+                            </span>
+                          ) : (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              File
                             </span>
                           )}
                         </td>
@@ -175,7 +174,7 @@ export default function InfoPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(job.status)}`}>
-                            {job.status}
+                            {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -187,6 +186,44 @@ export default function InfoPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {job.destination_email}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {canEditJob(job.status) ? (
+                            editingJobId === job.id ? (
+                              <div className="flex gap-2">
+                                <select
+                                  className="text-sm border border-gray-300 rounded px-2 py-1"
+                                  defaultValue={job.status}
+                                  onChange={(e) =>
+                                    setConfirmModal({
+                                      jobId: job.id,
+                                      newStatus: e.target.value as Status,
+                                    })
+                                  }
+
+                                >
+                                  <option value={job.status}>{ job.status.toString().charAt(0).toUpperCase() + job.status.slice(1) }</option>
+                                  <option value={Status.Complete}>Complete</option>
+                                  <option value={Status.Failed}>Failed</option>
+                                </select>
+                                <button
+                                  onClick={() => setEditingJobId(null)}
+                                  className="text-gray-500 hover:text-gray-700"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setEditingJobId(job.id)}
+                                className="text-blue-600 hover:text-blue-800 font-medium"
+                              >
+                                Edit
+                              </button>
+                            )
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -196,6 +233,48 @@ export default function InfoPage() {
           </div>
         </div>
       </div>
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-[300px]">
+            <h2 className="text-lg font-semibold mb-4">
+              Change Job Status?
+            </h2>
+      
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to change this job status to{" "}
+              <span className="font-medium">
+                {confirmModal.newStatus}
+              </span>
+              ?
+            </p>
+      
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-3 py-1 text-sm bg-gray-200 rounded"
+                onClick={() => setConfirmModal(null)}
+              >
+                Cancel
+              </button>
+      
+              <button
+                className="px-3 py-1 text-sm bg-blue-600 text-white rounded"
+                onClick={async () => {
+                  await editJob(
+                    confirmModal.jobId,
+                    confirmModal.newStatus
+                  );
+                  setConfirmModal(null);
+                  setEditingJobId(null);
+                  window.location.reload()
+                }}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

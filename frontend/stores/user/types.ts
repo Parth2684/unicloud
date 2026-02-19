@@ -20,8 +20,8 @@ export interface UserInfo {
 }
 
 export enum TransferType {
-  GoogleToGoogle,
-  MegaToGoogle
+  GoogleToGoogle = "google_to_google",
+  MegaToGoogle = "mega_to_google"
 }
 
 export enum Status {
@@ -38,8 +38,8 @@ export interface Job {
   destination_image?: string,
   fail_reason?: string,
   finished_at?: Date,
-  from_drive?: String,
-  id: String,
+  from_drive?: string,
+  id: string,
   is_folder: boolean,
   link: string | null,
   link_type: string | null,
