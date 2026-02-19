@@ -25,10 +25,10 @@ export enum TransferType {
 }
 
 export enum Status {
-  Pending,
-  Running,
-  Complete,
-  Failed
+  Pending= "pending",
+  Running = "running",
+  Complete = "completed",
+  Failed = "failed"
 }
 
 

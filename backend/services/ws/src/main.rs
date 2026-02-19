@@ -7,8 +7,8 @@ use common::{db_connect::init_db, export_envs::ENVS, redis_connection::init_redi
 use once_cell::sync::Lazy;
 use redis::aio::ConnectionManager;
 use sea_orm::DatabaseConnection;
-use std::{collections::HashMap, sync::Arc, time::Duration};
-use tokio::{sync::Mutex as TokioMutex, time::interval};
+use std::{collections::HashMap, sync::Arc};
+use tokio::{sync::Mutex as TokioMutex};
 
 mod handlers;
 mod socket_upgrade;

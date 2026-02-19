@@ -1,4 +1,4 @@
-use axum::extract::ws::{CloseFrame, Message, Utf8Bytes, WebSocket};
+use axum::extract::ws::{Message, WebSocket};
 use common::jwt_config::decode_jwt;
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use redis::AsyncTypedCommands;

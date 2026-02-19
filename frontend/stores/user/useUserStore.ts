@@ -36,7 +36,7 @@ export const useUserStore = create<UserState & UserAction>((set, get) => ({
     try {
       const res = await axiosInstance.post("/user/edit-job", {
         id: job_id,
-        status: status
+        status: status.charAt(0).toUpperCase() + status.slice(1)
       })
       set((state) => ({
         jobs: state.jobs?.map((job) => 

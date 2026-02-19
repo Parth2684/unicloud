@@ -32,6 +32,10 @@ pub async fn copy_google_to_google(job: JobModel) {
             .lrem("processing", 1, job.id.to_string())
             .await
             .ok();
+        redis_conn  
+            .lrem("copy:job", 1, job.id.to_string())
+            .await
+            .ok();
     }
     let jwt = create_jwt(&job.user_id.to_string()).ok();
     if let Some(token) = jwt {
