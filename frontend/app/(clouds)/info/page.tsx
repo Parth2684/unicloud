@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useUserStore } from "../../../stores/user/useUserStore";
 import { Status, TransferType } from "../../../stores/user/types";
 import { formatBytes, formatDuration } from "../../../utils/format";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 
 export default function InfoPage() {
   const { userInfo, jobs, setUserInfo, setJobs, editJob } = useUserStore();
@@ -13,11 +13,11 @@ export default function InfoPage() {
     jobId: string;
     newStatus: Status;
   } | null>(null);
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
     if (userInfo == null) {
-      setUserInfo()
+      setUserInfo();
     }
     setJobs();
   }, [setUserInfo, setJobs]);
@@ -74,10 +74,8 @@ export default function InfoPage() {
           >
             ← Back
           </button>
-        
-          <h1 className="text-3xl font-bold text-gray-900">
-            User Information
-          </h1>
+
+          <h1 className="text-3xl font-bold text-gray-900">User Information</h1>
         </div>
 
         {/* User Info Section */}
@@ -133,7 +131,6 @@ export default function InfoPage() {
                   {formatBytes(Number(userInfo.free_quota))}
                 </p>
               </div>
-              
             </div>
           </div>
         </div>
@@ -175,10 +172,10 @@ export default function InfoPage() {
                       </th>
                       <th className="px-2 py-3 text-center text-xs font-medium text-gray-900 uppercase tracking-wider border-r border-gray-400">
                         Destination
-                        </th>
-                        <th className="px-2 py-3 text-center text-xs font-medium text-gray-900 uppercase tracking-wider border-r border-gray-400">
-                          Finished In
-                        </th>
+                      </th>
+                      <th className="px-2 py-3 text-center text-xs font-medium text-gray-900 uppercase tracking-wider border-r border-gray-400">
+                        Finished In
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">

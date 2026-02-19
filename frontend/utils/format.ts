@@ -20,13 +20,7 @@ export const formatDuration = (time: string | number): string => {
   const k = 1000;
   const sizes = ["ms", "s", "min", "hr", "day"];
 
-  const steps = [
-    1,
-    k,
-    k * 60,
-    k * 60 * 60,
-    k * 60 * 60 * 24
-  ];
+  const steps = [1, k, k * 60, k * 60 * 60, k * 60 * 60 * 24];
 
   let i = steps.length - 1;
 

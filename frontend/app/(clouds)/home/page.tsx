@@ -23,7 +23,7 @@ export default function Home() {
         </a>
 
         {/* Profile */}
-        <h1 className='text-2xl text-center font-bold'>unicloud</h1>
+        <h1 className="text-2xl text-center font-bold">unicloud</h1>
         <div
           className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden text-sm font-medium text-gray-700"
           onClick={() => {

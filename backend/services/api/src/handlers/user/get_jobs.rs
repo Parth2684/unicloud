@@ -9,7 +9,8 @@ use entities::{
     job::{Column as JobColumn, Entity as JobEntity, Relation as JobRelation},
 };
 use sea_orm::{
-    ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, RelationTrait, prelude::Expr, sea_query::Alias
+    ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, RelationTrait, prelude::Expr,
+    sea_query::Alias,
 };
 use serde_json::json;
 

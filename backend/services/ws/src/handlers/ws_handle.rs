@@ -41,11 +41,11 @@ pub async fn handle_socket(socket: WebSocket, state: AppState, params: HashMap<S
             match sender.send(Message::Text(msg.into())).await {
                 Err(err) => {
                     eprintln!("{err:?}");
-                    break
+                    break;
                 }
-                Ok(_) => continue
-            } 
-        } 
+                Ok(_) => continue,
+            }
+        }
     });
     // if sender
     //     .send(Message::Text("ws-connected".into()))
@@ -75,7 +75,7 @@ pub async fn handle_socket(socket: WebSocket, state: AppState, params: HashMap<S
 
             tokio::spawn(async move {
                 let mut rx_bus = subscribe_job(&JOB_BUS, &job_id).await;
-                
+
                 while let Ok(msg) = rx_bus.recv().await {
                     println!("{:?}", msg);
                     if tx_clone.send(msg.clone()).is_err() {
@@ -116,5 +116,4 @@ pub async fn handle_socket(socket: WebSocket, state: AppState, params: HashMap<S
             }
         }
     }
-    
 }

@@ -27,7 +27,7 @@ pub async fn edit_job(
     extract::Json(payload): extract::Json<EditJobBody>,
 ) -> Result<Response, AppError> {
     let (mut redis_conn, db) = tokio::join!(init_redis(), init_db());
-    
+
     match payload.status {
         Status::Completed | Status::Failed => {
             match JobEntity::find()
@@ -44,22 +44,23 @@ pub async fn edit_job(
                     None => Err(AppError::NotFound(Some(String::from("No such job found")))),
                     Some(job) => {
                         if job.status == payload.status {
-                            return Err(AppError::Forbidden(Some(format!("job status is already {:?}", &payload.status))));
+                            return Err(AppError::Forbidden(Some(format!(
+                                "job status is already {:?}",
+                                &payload.status
+                            ))));
                         }
                         if job.status == Status::Completed {
-                            return Err(AppError::Forbidden(Some(String::from("You cannot change a job which is completed"))));
+                            return Err(AppError::Forbidden(Some(String::from(
+                                "You cannot change a job which is completed",
+                            ))));
                         }
                         let (_, _) = (
-                            redis_conn
-                                .lrem("processing", 1, &job.id.to_string())
-                                .await,
-                            redis_conn
-                                .lrem("copy:job",1, &job.id.to_string())
-                                .await,
+                            redis_conn.lrem("processing", 1, &job.id.to_string()).await,
+                            redis_conn.lrem("copy:job", 1, &job.id.to_string()).await,
                         );
                         let mut edit_job: JobActive = job.into();
                         edit_job.status = Set(payload.status);
-                        
+
                         match edit_job.update(db).await {
                             Ok(updated) => Ok((
                                 StatusCode::OK,
@@ -78,10 +79,8 @@ pub async fn edit_job(
                 },
             }
         }
-        _ => {
-            Err(AppError::Forbidden(Some(String::from("You cannot change a job's status to pending or running"))))
-        }
+        _ => Err(AppError::Forbidden(Some(String::from(
+            "You cannot change a job's status to pending or running",
+        )))),
     }
-    
-    
 }

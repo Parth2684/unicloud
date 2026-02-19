@@ -75,9 +75,10 @@ const CloudAccountCard = ({ account }: CloudAccountCardProps) => {
   const usage = formatBytes(storageQuota.usage);
   const limitLabel = storageQuota.limit ? formatBytes(storageQuota.limit) : null;
   const percentage = getUsagePercentage(
-    storageQuota.usage,     // ✅ raw number
-    storageQuota.limit!      // ✅ raw number
-  );  const { deleteDrive } = useCloudStore();
+    storageQuota.usage, // ✅ raw number
+    storageQuota.limit!, // ✅ raw number
+  );
+  const { deleteDrive } = useCloudStore();
   const providerLabel = info.provider;
   const avatarInitial = info.image;
 
@@ -99,7 +100,11 @@ const CloudAccountCard = ({ account }: CloudAccountCardProps) => {
       </button>
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-100">
-          { avatarInitial ? <img className="truncate rounded-full" src={avatarInitial}></img> : <span className="truncate rounded-full">{info.email[0].toUpperCase()}</span> }
+          {avatarInitial ? (
+            <img className="truncate rounded-full" src={avatarInitial}></img>
+          ) : (
+            <span className="truncate rounded-full">{info.email[0].toUpperCase()}</span>
+          )}
         </div>
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">

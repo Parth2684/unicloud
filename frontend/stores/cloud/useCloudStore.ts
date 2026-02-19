@@ -125,6 +125,4 @@ export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
       }
     }
   },
-  
-  
 }));
