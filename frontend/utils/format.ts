@@ -12,6 +12,33 @@ export const formatBytes = (storage: string | number): string => {
   return `${value.toFixed(value >= 10 ? 0 : 2)} ${sizes[i]}`;
 };
 
+export const formatDuration = (time: string | number): string => {
+  const ms = typeof time === "number" ? time : Number(time);
+
+  if (!Number.isFinite(ms) || ms <= 0) return "0 ms";
+
+  const k = 1000;
+  const sizes = ["ms", "s", "min", "hr", "day"];
+
+  const steps = [
+    1,
+    k,
+    k * 60,
+    k * 60 * 60,
+    k * 60 * 60 * 24
+  ];
+
+  let i = steps.length - 1;
+
+  for (; i > 0; i--) {
+    if (ms >= steps[i]) break;
+  }
+
+  const value = ms / steps[i];
+
+  return `${value.toFixed(value >= 10 ? 0 : 2)} ${sizes[i]}`;
+};
+
 export const getUsagePercentage = (
   usage: string | number,
   limit: string | number | null,

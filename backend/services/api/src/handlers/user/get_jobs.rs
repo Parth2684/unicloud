@@ -9,8 +9,7 @@ use entities::{
     job::{Column as JobColumn, Entity as JobEntity, Relation as JobRelation},
 };
 use sea_orm::{
-    ColumnTrait, EntityTrait, QueryFilter, QuerySelect, RelationTrait, prelude::Expr,
-    sea_query::Alias,
+    ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, RelationTrait, prelude::Expr, sea_query::Alias
 };
 use serde_json::json;
 
@@ -70,6 +69,7 @@ pub async fn get_jobs(Extension(claims): Extension<Claims>) -> Result<Response, 
             Expr::col((Alias::new("destination_account"), CloudColumn::Image)),
             "destination_image",
         )
+        .order_by_desc(JobColumn::CreatedAt)
         .into_json()
         .all(db)
         .await;
