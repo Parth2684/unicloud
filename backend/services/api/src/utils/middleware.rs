@@ -22,6 +22,7 @@ pub async fn auth_middleware(
     let claims = decode_jwt(&token);
     match claims {
         Ok(claim) => {
+            
             request.extensions_mut().insert::<Claims>(claim);
             let response = next.run(request).await;
             Ok(response)

@@ -40,6 +40,12 @@ pub async fn listen(bus: JobBus) {
     }
 }
 
+// to apply new logic
+// subscribe to all
+// if a new sub id add into a hashmap according to user id
+// send to user 
+// and remove once status becomes completed or failed
+
 pub async fn subscribe_job(bus: &JobBus, job_id: &str) -> broadcast::Receiver<String> {
     let mut bus = bus.lock().await;
     bus.entry(job_id.to_owned())
