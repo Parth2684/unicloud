@@ -2,6 +2,21 @@
 resolver = "3"
 members = ["services/api", "libs/entities", "migration", "services/ws", "libs/common", "services/refresh-worker", "services/transfer-worker"]
 
+[profile.release.package."*"]
+opt-level = 3
+
+[profile.release]
+opt-level = 3          # Maximum optimization for speed
+lto = "fat"            # Most aggressive cross-crate optimization
+codegen-units = 1      # Best optimization opportunities
+panic = "abort"        # Removes unwinding overhead
+strip = true           # Smaller binary, faster loading
+incremental = false    # Better final optimization
+debug = false          # No debug info
+overflow-checks = false
+debug-assertions = false
+
+
 [workspace.dependencies]
 tokio = { version = "1", features = ["full"] }
 entities = { path = "libs/entities" }
