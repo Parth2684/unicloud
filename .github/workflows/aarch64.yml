@@ -25,7 +25,9 @@ jobs:
         run: |
           cargo build \
             --release \
-            --target aarch64-unknown-linux-musl
+            --target aarch64-unknown-linux-musl4
+      - name: Verify
+        run: file target/aarch64-unknown-linux-musl/release/api
 
       - name: Collect binaries
         run: |
