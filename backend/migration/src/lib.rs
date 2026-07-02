@@ -12,6 +12,7 @@ mod m20260130_160138_edit_permission_to_string_from_uuid;
 mod m20260215_132415_add_soft_delete_on_cloud_account;
 mod m20260216_125737_add_job_name;
 mod m20260217_052114_add_time_and_finished_at_in_jobs;
+mod m20260702_041235_add_refresh_at_in_quota;
 
 pub struct Migrator;
 
@@ -31,6 +32,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260215_132415_add_soft_delete_on_cloud_account::Migration),
             Box::new(m20260216_125737_add_job_name::Migration),
             Box::new(m20260217_052114_add_time_and_finished_at_in_jobs::Migration),
+            Box::new(m20260702_041235_add_refresh_at_in_quota::Migration),
         ]
     }
 }

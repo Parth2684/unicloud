@@ -44,7 +44,6 @@ pub async fn copy_google_to_google(job: JobModel) {
     if let (Some(from_drive), Some(from_file_id), Some(is_folder)) =
         (&job.from_drive, &job.from_file_id, &job.is_folder)
     {
-        println!("1");
         if !is_folder {
             match job.size {
                 None => {
@@ -148,7 +147,7 @@ pub async fn copy_google_to_google(job: JobModel) {
                                     }
                                 }
                                 Some(quo) => {
-                                    if quo.remaining_quota > size {
+                                    if quo.free_quota + quo.add_on_quota - quo.used_quota > size {
                                         let mut edit_job: JobActive = job.clone().into();
                                         edit_job.status = Set(Status::Running);
                                         match edit_job.update(db).await {
@@ -340,21 +339,11 @@ pub async fn copy_google_to_google(job: JobModel) {
                                                                                                 remove_permission(id, from_file_id, &token, &job.id).await;
                                                                                                 redis_conn.lrem("processing", 1, job.id.to_string()).await.ok();
                                                                                                 let elapsed = start.elapsed().as_millis() as i32;
-                                                                                                let remaining_overall = quo.remaining_quota - size;
-
                                                                                                 let mut edit_quota: QuotaActive = quo.clone().into();
-
-                                                                                                if quo.add_on_quota >= size {
-                                                                                                    edit_quota.add_on_quota = Set(quo.add_on_quota - size);
-                                                                                                } else {
-                                                                                                    let used_from_addon = quo.add_on_quota;
-                                                                                                    let used_from_free = size - used_from_addon;
-
-                                                                                                    edit_quota.add_on_quota = Set(0);
-                                                                                                    edit_quota.free_quota = Set(quo.free_quota - used_from_free);
-                                                                                                }
                                                                                                 edit_quota.used_quota = Set(quo.used_quota + size);
-                                                                                                edit_quota.remaining_quota = Set(remaining_overall);
+                                                                                                edit_quota.total_used = Set(quo.total_used + size);
+                                                                                                
+                                                                                                
                                                                                                 let mut edit_job: JobActive = job.clone().into();
                                                                                                 edit_job.fail_reason = Set(None);
                                                                                                 edit_job.time = Set(Some(elapsed));
