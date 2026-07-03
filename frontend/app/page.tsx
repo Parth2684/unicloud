@@ -3,23 +3,6 @@
 import Link from "next/link";
 
 export default function Home() {
-  // useEffect(() => {
-  //   // Check if user is already authenticated
-  //   const checkAuth = async () => {
-  //     try {
-  //       const response = await fetch("http://localhost:3000/api/v1/auth/token", {
-  //         credentials: "include",
-  //       });
-  //       if (response.ok) {
-  //         window.location.href = "/clouds";
-  //       }
-  //     } catch (error) {
-  //       console.log("Not authenticated");
-  //     }
-  //   };
-
-  //   checkAuth();
-  // }, []);
   const authLink = process.env.NEXT_PUBLIC_BACKEND_URL! + "/auth/google";
   const handleGoogleSignIn = () => {
     window.location.href = authLink;

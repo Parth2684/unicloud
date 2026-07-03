@@ -1,45 +1,41 @@
-use crate::{
-    handlers::helpers::subscriber::{JobBus, listen},
-    socket_upgrade::ws_handler,
-};
-use axum::{Router, routing::get};
-use common::{db_connect::init_db, export_envs::ENVS, redis_connection::init_redis};
-use once_cell::sync::Lazy;
-use redis::aio::ConnectionManager;
-use sea_orm::DatabaseConnection;
 use std::{collections::HashMap, sync::Arc};
-use tokio::sync::Mutex as TokioMutex;
 
-mod handlers;
-mod socket_upgrade;
+use axum::{Router, routing::any};
+use common::{db_connect::init_db, export_envs::ENVS};
+use dashmap::DashMap;
+use redis::aio::{PubSub};
+use sea_orm::DatabaseConnection;
+use tokio::sync::{Mutex, RwLock, mpsc};
+use uuid::Uuid;
+
+use crate::handler::{progress_sub::subscribe, ws_upgrade::websocket};
+
+
+mod handler;
 
 #[derive(Clone)]
-pub struct AppState {
-    redis: Arc<ConnectionManager>,
-    db: &'static DatabaseConnection,
+struct AppState {
+    db: DatabaseConnection,
+    pubsub: Arc<Mutex<PubSub>>,
+    clients: Arc<DashMap<Uuid, mpsc::UnboundedSender<String>>>
 }
 
-pub static JOB_BUS: Lazy<JobBus> = Lazy::new(|| Arc::new(TokioMutex::new(HashMap::new())));
 
 #[tokio::main]
 async fn main() {
-    let manager = init_redis().await;
-    let redis = Arc::new(manager);
-    let db = init_db().await;
+    let redis_url = &ENVS.redis_url.to_owned();
+    let redis_client = redis::Client::open(redis_url.as_str()).expect("Error getting redis client");
+    
+    let (db, pubsub) = tokio::join!(
+        init_db(), redis_client.get_async_pubsub());
 
-    let state = AppState { redis, db };
-    tokio::spawn(listen(JOB_BUS.clone()));
+    let pubsub = pubsub.unwrap();
 
-    let app: Router<()> = Router::new()
-        .route("/", get(|| async { "Noice" }))
-        .route("/ws", get(ws_handler))
-        .with_state(state);
+    let appstate = Arc::new(AppState{ db: db.clone().to_owned(), pubsub: Arc::new(Mutex::new(pubsub)), clients: Arc::new(DashMap::new()) });
 
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", &ENVS.port))
-        .await
-        .unwrap();
-    println!("Server running on port {}", &ENVS.port);
-    axum::serve(listener, app.into_make_service())
-        .await
-        .unwrap();
+    tokio::spawn(subscribe(Arc::clone(&appstate)));
+    let app: Router<Arc<AppState>> = Router::new()
+        .route("/ws/{token}", any(websocket))
+        .with_state(Arc::clone(&appstate));
+    
 }
