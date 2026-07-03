@@ -8,7 +8,7 @@ use uuid::Uuid;
 use crate::AppState;
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct JobProgress {
     user_id: Uuid,
     job_id: Uuid,
@@ -48,5 +48,12 @@ pub async fn subscribe(state: Arc<AppState>) {
             }
             Ok(j) => j
         };
+        {
+            if let Some(tx) = state.clients.get(&job.user_id) {
+                if let Err(err) = tx.send(serde_json::to_string(&job).unwrap()) {
+                    eprintln!("Error sending progress of job: {:?} \n error: {:?}", job, err);
+                }
+            }
+        }
     }
 }

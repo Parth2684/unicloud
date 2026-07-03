@@ -17,8 +17,8 @@ export function getSocket(token: string | null) {
     return null;
   }
 
-  const url = new URL(WEBSOCKET_URL);
-  url.searchParams.append("token", token);
+  const url = new URL(`${WEBSOCKET_URL}/${token}`);
+  
 
   socket = new WebSocket(url.toString());
   return socket;
