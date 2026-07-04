@@ -16,7 +16,7 @@ impl MigrationTrait for Migration {
                         ColumnDef::new(Quota::RefreshAt)
                             .date()
                             .not_null()
-                            .default(Expr::cust("CURRENT_TIMESTAMP + INTERVAL '30 day'")),
+                            .default(Expr::cust("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date + 30")),
                     )
                     .add_column_if_not_exists(ColumnDef::new(Quota::TotalUsed).big_integer().not_null().default(0))
                     .drop_column_if_exists(Quota::RemainingQuota)

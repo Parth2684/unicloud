@@ -14,3 +14,4 @@ chrono = "0.4.42"
 reqwest = { version = "0.12.24", default-features = false, features = ["rustls-tls", "json"] }
 serde = { workspace = true }
 axum = { version = "0.8.6", features = ["http2"] }
+tokio-cron-scheduler = "0.15.1"
