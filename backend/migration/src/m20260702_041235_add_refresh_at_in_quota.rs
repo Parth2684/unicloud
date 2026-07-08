@@ -16,9 +16,16 @@ impl MigrationTrait for Migration {
                         ColumnDef::new(Quota::RefreshAt)
                             .date()
                             .not_null()
-                            .default(Expr::cust("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date + 30")),
+                            .default(Expr::cust(
+                                "(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date + 30",
+                            )),
                     )
-                    .add_column_if_not_exists(ColumnDef::new(Quota::TotalUsed).big_integer().not_null().default(0))
+                    .add_column_if_not_exists(
+                        ColumnDef::new(Quota::TotalUsed)
+                            .big_integer()
+                            .not_null()
+                            .default(0),
+                    )
                     .drop_column_if_exists(Quota::RemainingQuota)
                     .drop_column_if_exists(Quota::TotalQuota)
                     .to_owned(),
@@ -44,5 +51,5 @@ enum Quota {
     RefreshAt,
     TotalQuota,
     RemainingQuota,
-    TotalUsed
+    TotalUsed,
 }

@@ -6,8 +6,8 @@ use tokio_cron_scheduler::{Job, JobScheduler};
 use uuid::Uuid;
 
 use crate::{cron::refresh_quota, handle_refresh::handle_refresh};
-mod handle_refresh;
 mod cron;
+mod handle_refresh;
 
 #[tokio::main]
 async fn main() {
@@ -17,19 +17,25 @@ async fn main() {
 
     let sched = JobScheduler::new().await.unwrap();
 
-    sched.add(Job::new_async("0 0 0 * * *", |_, _| {
-        Box::pin(async move {
-            loop {
-                match refresh_quota().await {
-                    Ok(_) => break,
-                    Err(err) => {
-                        eprintln!("quota refresh failed: {err}");
-                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+    sched
+        .add(
+            Job::new_async("0 0 0 * * *", |_, _| {
+                Box::pin(async move {
+                    loop {
+                        match refresh_quota().await {
+                            Ok(_) => break,
+                            Err(err) => {
+                                eprintln!("quota refresh failed: {err}");
+                                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                            }
+                        }
                     }
-                }
-            }
-        })
-    }).unwrap()).await.unwrap();
+                })
+            })
+            .unwrap(),
+        )
+        .await
+        .unwrap();
 
     sched.start().await.unwrap();
 
