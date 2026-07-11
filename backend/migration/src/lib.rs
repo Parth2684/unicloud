@@ -14,6 +14,10 @@ mod m20260216_125737_add_job_name;
 mod m20260217_052114_add_time_and_finished_at_in_jobs;
 mod m20260702_041235_add_refresh_at_in_quota;
 mod m20260704_063920_remove_add_on_from_quota;
+<<<<<<< Updated upstream
+=======
+mod m20260709_055039_add_top_up_and_checks_for_handling_no_negatives;
+>>>>>>> Stashed changes
 
 pub struct Migrator;
 
@@ -35,6 +39,10 @@ impl MigratorTrait for Migrator {
             Box::new(m20260217_052114_add_time_and_finished_at_in_jobs::Migration),
             Box::new(m20260702_041235_add_refresh_at_in_quota::Migration),
             Box::new(m20260704_063920_remove_add_on_from_quota::Migration),
+<<<<<<< Updated upstream
+=======
+            Box::new(m20260709_055039_add_top_up_and_checks_for_handling_no_negatives::Migration),
+>>>>>>> Stashed changes
         ]
     }
 }
