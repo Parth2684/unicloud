@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "express": "^5.2.1",
-    "razorpay": "^2.9.6"
+    "razorpay": "^2.9.6",
+    "@repo/database": "workspace: *"
   }
 }
