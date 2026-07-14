@@ -109,6 +109,18 @@ model users {
   subscription  subscription[]
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model plans {
+  id          String   @id @db.Uuid
+  name        String   @unique @db.VarChar
+  description String   @db.VarChar
+  amount      BigInt
+  created_at  DateTime @db.Timestamptz(6)
+  interval    Int
+  period      String   @db.VarChar
+  currency    String   @db.Char(3)
+}
+
 enum link_type {
   torrent
 }

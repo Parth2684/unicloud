@@ -15,6 +15,7 @@ mod m20260217_052114_add_time_and_finished_at_in_jobs;
 mod m20260702_041235_add_refresh_at_in_quota;
 mod m20260704_063920_remove_add_on_from_quota;
 mod m20260709_055039_add_top_up_and_checks_for_handling_no_negatives;
+mod m20260714_151743_add_plan_model;
 
 pub struct Migrator;
 
@@ -37,6 +38,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260702_041235_add_refresh_at_in_quota::Migration),
             Box::new(m20260704_063920_remove_add_on_from_quota::Migration),
             Box::new(m20260709_055039_add_top_up_and_checks_for_handling_no_negatives::Migration),
+            Box::new(m20260714_151743_add_plan_model::Migration),
         ]
     }
 }

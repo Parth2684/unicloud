@@ -15,7 +15,8 @@
     "lint": "eslint . --max-warnings 0",
     "prebuild": "bun run generate",
     "predev": "bun run generate",
-    "studio": "prisma studio"
+    "studio": "prisma studio",
+    "pull": "prisma db pull"
   },
   "dependencies": {
     "@prisma/client": "^7.8.0",
