@@ -84,3 +84,7 @@ async function create() {
   }
 
 }
+
+create()
+  .then(() => console.log("Plans created successfully"))
+  .catch((err) => console.log("Plans could not be created", err))
