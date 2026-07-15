@@ -3,6 +3,7 @@
 pub use super::cloud_account::Entity as CloudAccount;
 pub use super::job::Entity as Job;
 pub use super::payment::Entity as Payment;
+pub use super::plans::Entity as Plans;
 pub use super::quota::Entity as Quota;
 pub use super::subscription::Entity as Subscription;
 pub use super::users::Entity as Users;

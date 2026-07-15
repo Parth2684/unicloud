@@ -64,7 +64,7 @@ async function create() {
         currency: plan.item.currency,
         interval: plan.interval,
         period: plan.period,
-        created_at: new Date(plan.created_at.toString())
+        created_at: new Date(plan.created_at)
       };
     });
 
@@ -73,7 +73,6 @@ async function create() {
         data: dbPlans
       })
     } catch (err) {
-      fs.writeFileSync("./error_plans.txt", dbPlans.toString())
       console.log("plans: ", dbPlans)
       console.error("Error creating plans in database", err)
       throw new Error(err as string)

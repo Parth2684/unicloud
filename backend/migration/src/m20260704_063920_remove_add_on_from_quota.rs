@@ -30,7 +30,7 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(
                         ColumnDef::new(Subscription::Id)
-                            .uuid()
+                            .string()
                             .primary_key()
                             .unique_key()
                             .not_null(),
@@ -107,7 +107,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default(Expr::cust("'pending'")),
                     )
-                    .col(ColumnDef::new(Payment::SubscriptionId).uuid())
+                    .col(ColumnDef::new(Payment::SubscriptionId).string())
                     .col(ColumnDef::new(Payment::UserId).uuid().not_null())
                     .foreign_key(
                         ForeignKey::create()

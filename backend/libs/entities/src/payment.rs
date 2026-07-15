@@ -18,7 +18,7 @@ pub struct Model {
     #[sea_orm(column_type = "Text", nullable)]
     pub razorpay_order_id: Option<String>,
     pub payment_status: PaymentStatus,
-    pub subscription_id: Option<Uuid>,
+    pub subscription_id: Option<String>,
     pub user_id: Uuid,
     #[sea_orm(
         belongs_to,

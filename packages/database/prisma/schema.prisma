@@ -60,7 +60,7 @@ model payment {
   razorpay_payment_id String         @unique
   razorpay_order_id   String?
   payment_status      payment_status @default(pending)
-  subscription_id     String?        @db.Uuid
+  subscription_id     String?        @db.VarChar
   user_id             String         @db.Uuid
   subscription        subscription?  @relation(fields: [subscription_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk-payment-subscription-id")
   users               users          @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk-payment-user-id")
@@ -74,8 +74,8 @@ model quota {
   add_on_quota BigInt     @default(0)
   used_quota   BigInt     @default(0)
   quota_type   quota_type @default(Free)
-  total_used   BigInt     @default(0)
   refresh_at   DateTime   @default(dbgenerated("(((CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text))::date + 30)")) @db.Date
+  total_used   BigInt     @default(0)
   top_up       BigInt     @default(0)
   users        users      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-quota-user-id")
 }
@@ -86,7 +86,7 @@ model seaql_migrations {
 }
 
 model subscription {
-  id                       String    @id @db.Uuid
+  id                       String    @id @db.VarChar
   razorpay_subscription_id String    @unique
   current_period_start     DateTime  @default(dbgenerated("((CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text))::date")) @db.Date
   current_period_end       DateTime  @db.Date
