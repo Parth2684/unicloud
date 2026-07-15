@@ -4,6 +4,7 @@
   "exports": {
     ".": "./src/client.ts"
   },
+  "type": "module",
   "scripts": {
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
@@ -33,6 +34,6 @@
     "rimraf": "^5.0.5",
     "tsup": "^8.0.2",
     "tsx": "4.21.0",
-    "typescript": "5.5.4"
+    "typescript": "^7.0.2"
   }
 }

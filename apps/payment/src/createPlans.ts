@@ -5,7 +5,7 @@ import fs from "fs";
 
 
 async function create() {
-  const bronze = razorpayInstance.plans.create({
+  const bronze = await razorpayInstance.plans.create({
       period: "monthly",
       interval: 3,
       item: {
@@ -16,7 +16,7 @@ async function create() {
       }
     })
 
-  const silver = razorpayInstance.plans.create({
+  const silver = await razorpayInstance.plans.create({
       period: "monthly",
       interval: 3,
       item: {
@@ -27,7 +27,7 @@ async function create() {
       }
     });
 
-  const gold = razorpayInstance.plans.create({
+  const gold = await razorpayInstance.plans.create({
       period: "monthly",
       interval: 3,
       item: {
@@ -38,7 +38,7 @@ async function create() {
       }
     });
 
-  const platinum = razorpayInstance.plans.create({
+  const platinum = await razorpayInstance.plans.create({
     period: "monthly",
     interval: 3,
     item: {
@@ -53,18 +53,18 @@ async function create() {
   plans.push(bronze, silver, gold, platinum)
 
   try {
-    const createdPlans = await Promise.all(plans)
+    const createdPlans = plans;
 
     const dbPlans: plans[] = createdPlans.map((plan) => {
       return {
         id: plan.id,
         name: plan.item.name,
         description: plan.item.description as string,
-        amount: typeof (plan.item.amount) === "string" ? BigInt(plan.item.amount) : BigInt(plan.item.amount),
+        amount: BigInt(plan.item.amount),
         currency: plan.item.currency,
         interval: plan.interval,
         period: plan.period,
-        created_at: new Date(plan.created_at)
+        created_at: new Date(plan.created_at.toString())
       };
     });
 
@@ -76,11 +76,12 @@ async function create() {
       fs.writeFileSync("./error_plans.txt", dbPlans.toString())
       console.log("plans: ", dbPlans)
       console.error("Error creating plans in database", err)
+      throw new Error(err as string)
     }
 
   } catch (err) {
     console.error("Error creating plans: ", err)
-    return;
+    throw new Error(err as string)
   }
 
 }

@@ -12,7 +12,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Plans::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Plans::Id).uuid().primary_key())
+                    .col(ColumnDef::new(Plans::Id).string().primary_key())
                     .col(ColumnDef::new(Plans::Name).string().not_null().unique_key())
                     .col(ColumnDef::new(Plans::Description).string().not_null())
                     .col(ColumnDef::new(Plans::Amount).big_integer().not_null().check(Expr::col(Plans::Amount).gt(0)))

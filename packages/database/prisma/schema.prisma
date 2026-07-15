@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../generated/client"
 }
 
@@ -111,7 +111,7 @@ model users {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model plans {
-  id          String   @id @db.Uuid
+  id          String   @id @db.VarChar
   name        String   @unique @db.VarChar
   description String   @db.VarChar
   amount      BigInt

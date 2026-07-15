@@ -1,14 +1,10 @@
 {
   "name": "unicloud",
   "module": "index.ts",
-  "type": "module",
-  "private": true,
   "devDependencies": {
     "@types/bun": "latest",
-    "turbo": "^2.10.4"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
+    "turbo": "^2.10.4",
+    "typescript": "^7.0.2"
   },
   "devEngines": {
     "packageManager": {
@@ -16,12 +12,14 @@
       "version": "1.2.0"
     }
   },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "private": true,
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev"
-  }
+  },
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
 }
