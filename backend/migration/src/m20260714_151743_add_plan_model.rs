@@ -22,6 +22,21 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Plans::Currency).char_len(3).not_null())
                     .to_owned(),
             )
+            .await?;
+        manager
+            .alter_table(
+                Table::alter()
+                    .table(Subscription::Table)
+                    .add_column_if_not_exists(ColumnDef::new(Subscription::PlanId).string())
+                    .add_foreign_key(TableForeignKey::new()
+                        .name("fk-subscription-plan-id")
+                        .from_tbl(Subscription::Table)
+                        .from_col( Subscription::PlanId)
+                        .to_tbl(Plans::Table)
+                        .to_col(Plans::Id)
+                    )
+                    .to_owned()
+            )
             .await
     }
 
@@ -29,7 +44,15 @@ impl MigrationTrait for Migration {
 
         manager
             .drop_table(Table::drop().table(Plans::Table).to_owned())
-            .await
+            .await?;
+        manager
+            .alter_table(Table::alter()
+                .table(Subscription::Table)
+                .drop_column_if_exists(Subscription::PlanId)
+                .drop_foreign_key("fk-subscription-plan-id")
+                .to_owned()
+            ).await
+        
     }
 }
 
@@ -46,4 +69,11 @@ enum Plans {
     Amount,
     Currency,
     CreatedAt
+}
+
+
+#[derive(DeriveIden)]
+enum Subscription {
+    Table,
+    PlanId
 }

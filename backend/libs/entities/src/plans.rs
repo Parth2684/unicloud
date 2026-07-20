@@ -17,6 +17,8 @@ pub struct Model {
     pub interval: i32,
     pub period: String,
     pub currency: String,
+    #[sea_orm(has_many)]
+    pub subscriptions: HasMany<super::subscription::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

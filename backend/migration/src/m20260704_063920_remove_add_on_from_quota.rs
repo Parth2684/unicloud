@@ -29,16 +29,9 @@ impl MigrationTrait for Migration {
                     .table(Subscription::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Subscription::Id)
-                            .string()
-                            .primary_key()
-                            .unique_key()
-                            .not_null(),
-                    )
-                    .col(
                         ColumnDef::new(Subscription::RazorpaySubscriptionId)
                             .text()
-                            .unique_key()
+                            .primary_key()
                             .not_null(),
                     )
                     .col(
@@ -69,8 +62,8 @@ impl MigrationTrait for Migration {
                     .table(Payment::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Payment::Id)
-                            .uuid()
+                        ColumnDef::new(Payment::RazorpayPaymentId)
+                            .string()
                             .primary_key()
                             .not_null()
                             .unique_key(),
@@ -83,12 +76,6 @@ impl MigrationTrait for Migration {
                             .timestamp_with_time_zone()
                             .not_null()
                             .default(Expr::cust("CURRENT_TIMESTAMP")),
-                    )
-                    .col(
-                        ColumnDef::new(Payment::RazorpayPaymentId)
-                            .text()
-                            .not_null()
-                            .unique_key(),
                     )
                     .col(ColumnDef::new(Payment::RazorpayOrderId).text())
                     .col(
@@ -113,7 +100,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-payment-subscription-id")
                             .from(Payment::Table, Payment::SubscriptionId)
-                            .to(Subscription::Table, Subscription::Id)
+                            .to(Subscription::Table, Subscription::RazorpaySubscriptionId)
                             .on_delete(ForeignKeyAction::Restrict),
                     )
                     .foreign_key(
@@ -151,9 +138,8 @@ impl MigrationTrait for Migration {
 #[derive(DeriveIden)]
 enum Subscription {
     Table,
-    Id,
-    UserId,
     RazorpaySubscriptionId,
+    UserId,
     CurrentPeriodStart,
     CurrentPeriodEnd,
 }
@@ -161,7 +147,6 @@ enum Subscription {
 #[derive(DeriveIden)]
 enum Payment {
     Table,
-    Id,
     RazorpayPaymentId,
     RazorpayOrderId,
     Amount,

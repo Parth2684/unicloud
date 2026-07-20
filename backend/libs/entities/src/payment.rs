@@ -8,13 +8,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "payment")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false)]
-    pub id: Uuid,
+    #[sea_orm(column_type = "Text", unique, primary_key, auto_increment = false)]
+    pub razorpay_payment_id: String,
     pub amount: i64,
     pub currency: String,
     pub created_at: DateTimeWithTimeZone,
-    #[sea_orm(column_type = "Text", unique)]
-    pub razorpay_payment_id: String,
     #[sea_orm(column_type = "Text", nullable)]
     pub razorpay_order_id: Option<String>,
     pub payment_status: PaymentStatus,
@@ -23,7 +21,7 @@ pub struct Model {
     #[sea_orm(
         belongs_to,
         from = "subscription_id",
-        to = "id",
+        to = "razorpay_subscription_id",
         on_update = "NoAction",
         on_delete = "Restrict"
     )]

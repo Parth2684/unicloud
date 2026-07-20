@@ -53,16 +53,15 @@ model job {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model payment {
-  id                  String         @id @db.Uuid
+  razorpay_payment_id String         @id @db.VarChar
   amount              BigInt
   currency            String         @db.Char(3)
   created_at          DateTime       @default(now()) @db.Timestamptz(6)
-  razorpay_payment_id String         @unique
   razorpay_order_id   String?
   payment_status      payment_status @default(pending)
   subscription_id     String?        @db.VarChar
   user_id             String         @db.Uuid
-  subscription        subscription?  @relation(fields: [subscription_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk-payment-subscription-id")
+  subscription        subscription?  @relation(fields: [subscription_id], references: [razorpay_subscription_id], onDelete: Restrict, onUpdate: NoAction, map: "fk-payment-subscription-id")
   users               users          @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk-payment-user-id")
 }
 
@@ -86,12 +85,13 @@ model seaql_migrations {
 }
 
 model subscription {
-  id                       String    @id @db.VarChar
-  razorpay_subscription_id String    @unique
+  razorpay_subscription_id String    @id
   current_period_start     DateTime  @default(dbgenerated("((CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text))::date")) @db.Date
   current_period_end       DateTime  @db.Date
   user_id                  String    @db.Uuid
+  plan_id                  String?   @db.VarChar
   payment                  payment[]
+  plans                    plans?    @relation(fields: [plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-subscription-plan-id")
   users                    users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-subscription-user-id")
 }
 
@@ -111,14 +111,15 @@ model users {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model plans {
-  id          String   @id @db.VarChar
-  name        String   @unique @db.VarChar
-  description String   @db.VarChar
-  amount      BigInt
-  created_at  DateTime @db.Timestamptz(6)
-  interval    Int
-  period      String   @db.VarChar
-  currency    String   @db.Char(3)
+  id           String         @id @db.VarChar
+  name         String         @unique @db.VarChar
+  description  String         @db.VarChar
+  amount       BigInt
+  created_at   DateTime       @db.Timestamptz(6)
+  interval     Int
+  period       String         @db.VarChar
+  currency     String         @db.Char(3)
+  subscription subscription[]
 }
 
 enum link_type {

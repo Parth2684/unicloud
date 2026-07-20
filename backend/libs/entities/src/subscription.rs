@@ -7,15 +7,22 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "subscription")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false)]
-    pub id: String,
-    #[sea_orm(column_type = "Text", unique)]
+    #[sea_orm(column_type = "Text", unique, primary_key, auto_increment = false)]
     pub razorpay_subscription_id: String,
     pub current_period_start: Date,
     pub current_period_end: Date,
     pub user_id: Uuid,
+    pub plan_id: Option<String>,
     #[sea_orm(has_many)]
     pub payments: HasMany<super::payment::Entity>,
+    #[sea_orm(
+        belongs_to,
+        from = "plan_id",
+        to = "id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    pub plans: HasOne<super::plans::Entity>,
     #[sea_orm(
         belongs_to,
         from = "user_id",
