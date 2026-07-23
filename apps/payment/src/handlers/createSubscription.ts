@@ -32,9 +32,15 @@ export const createSubscription = async (req: Request, res: Response) => {
           plan_id: razorpaySubscription.plan_id
         }
       })
+      res.json({
+        subscriptionId: dbSubscription.razorpay_subscription_id
+      })
     } catch (err) {
       console.error(err)
-      
+      res.status(500).json({
+        message: "Server error: Error adding subscription to db"
+      })
+      return
     }
   } catch (err) {
     console.error(err)

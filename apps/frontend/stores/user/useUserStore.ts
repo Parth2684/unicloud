@@ -1,12 +1,12 @@
 import { create } from "zustand";
-import { Status, UserAction, UserState } from "./types";
+import { Job, Status, UserAction, UserState } from "./types";
 import { axiosInstance } from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 import toast from "react-hot-toast";
 
 export const useUserStore = create<UserState & UserAction>((set, get) => ({
   userInfo: null,
-  jobs: null,
+  jobs: [],
 
   setUserInfo: async () => {
     try {
@@ -22,7 +22,19 @@ export const useUserStore = create<UserState & UserAction>((set, get) => ({
   setJobs: async () => {
     try {
       const res = await axiosInstance.get("/user/get-jobs");
-      set({ jobs: res.data.jobs });
+      let { jobs } = res.data
+      jobs.forEach((job: Job) => {
+        if (job.status == Status.Complete) {
+          job.progress = 100
+        }
+        if (job.status == Status.Pending) {
+          job.progress = 0
+        }
+        if (job.status == Status.Failed) {
+          job.progress = 0
+        }
+      })
+      set({ jobs });
     } catch (error) {
       console.error(error);
       if (error instanceof AxiosError && error.response?.data) {

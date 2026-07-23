@@ -3,6 +3,7 @@ import { CloudActions, CloudState } from "./types";
 import { axiosInstance } from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 import toast from "react-hot-toast";
+import { useUserStore } from "../user/useUserStore";
 
 export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
   loading: false,
@@ -88,6 +89,9 @@ export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
         to_drive,
         to_folder_id,
       });
+      useUserStore.setState((state) => ({
+        jobs: [...state.jobs, res.data.job],
+      }));
       toast.success(res.data.message);
     } catch (error) {
       console.error(error);
@@ -114,7 +118,7 @@ export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
 
   deleteFile: async (drive_id: string, file_id: string) => {
     try {
-      const res = await axiosInstance.delete(`/cloud/google/delete-file/${drive_id}/${file_id}`);
+      await axiosInstance.delete(`/cloud/google/delete-file/${drive_id}/${file_id}`);
       set((state) => ({
         drive: state.drive?.filter((file) => file.id !== file_id),
       }));

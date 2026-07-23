@@ -9,6 +9,7 @@ use crate::AppState;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct JobProgress {
+    job_type: String,
     user_id: Uuid,
     job_id: Uuid,
     stage: JobStage,

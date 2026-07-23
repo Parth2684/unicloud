@@ -11,6 +11,7 @@ export default function RootLayout({
       <body>
         {children}
         <Toaster position="top-center" />
+        <Toaster toasterId="job_progress" position="bottom-right" />
       </body>
     </html>
   );

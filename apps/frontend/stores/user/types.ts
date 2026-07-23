@@ -28,7 +28,15 @@ export enum Status {
   Running = "running",
   Complete = "completed",
   Failed = "failed",
+  Started = "started",
+  Auth = "auth",
+  Permissions = "permissions",
+  Sharing = "sharing",
+  Copying = "copying",
+  Finalizing = "finalizing",
 }
+
+
 
 export interface Job {
   created_at: Date;
@@ -49,11 +57,12 @@ export interface Job {
   status: Status;
   time: number;
   transfer_type: TransferType;
+  progress: number
 }
 
 export type UserState = {
   userInfo: UserInfo | null;
-  jobs: Job[] | null;
+  jobs: Job[] ;
 };
 
 export type UserAction = {
