@@ -12,10 +12,10 @@
     "db:seed": "tsx src/seed.ts",
     "dev": "tsup src/* --watch",
     "format": "prisma format",
-    "generate": "prisma generate",
+    "db:generate": "prisma generate",
     "lint": "eslint . --max-warnings 0",
     "prebuild": "bun run generate",
-    "predev": "bun run generate",
+    "predev": "bun run db:generate",
     "studio": "prisma studio",
     "pull": "prisma db pull"
   },
