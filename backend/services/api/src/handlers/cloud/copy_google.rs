@@ -6,7 +6,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use chrono::Utc;
+use chrono::{NaiveDateTime, Utc};
 use common::{
     db_connect::init_db, encrypt::decrypt, jwt_config::Claims, redis_connection::init_redis,
 };
@@ -24,7 +24,7 @@ use entities::{
 use redis::AsyncTypedCommands;
 use reqwest::Client;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
 
@@ -44,6 +44,30 @@ pub struct FileDetail {
     name: String,
     mime_type: String,
     size: Option<String>,
+}
+
+
+#[derive(Serialize)]
+pub struct CopyResponse {
+    created_at: NaiveDateTime,
+    destination_email: String,
+    destination_image: Option<String>,
+    fail_reason: Option<String>,
+    finished_at: Option<NaiveDateTime>,
+    from_drive: Option<Uuid>,
+    id: Uuid,
+    is_folder: bool,
+    link: Option<String>,
+    link_type: Option<String>,
+    name: String,
+    permission_id: Option<String>,
+    size: Option<i64>,
+    source_email: Option<String>,
+    source_image: Option<String>,
+    status: Status,
+    time: Option<i64>,
+    transfer_type: TransferType,
+    progress: i8
 }
 
 pub async fn copy_file_or_folder(
@@ -272,7 +296,7 @@ pub async fn copy_file_or_folder(
                                                     }
                                                     Ok(job) => {
                                                         match redis_conn
-                                                            .lpush("copy:job", job.id.to_string())
+                                                            .lpush("copy:job", &job.id.to_string())
                                                             .await
                                                         {
                                                             Err(err) => {
@@ -293,6 +317,27 @@ pub async fn copy_file_or_folder(
                                                                     StatusCode::OK,
                                                                     axum::Json(json!({
                                                                         "message": "Task added successfully",
+                                                                        "job": CopyResponse{
+                                                                            created_at: job.created_at,
+                                                                            id: job.id,
+                                                                            destination_email: destination_acc.email,
+                                                                            source_email: Some(source_acc.email),
+                                                                            destination_image: destination_acc.image,
+                                                                            fail_reason: None,
+                                                                            finished_at: None,
+                                                                            from_drive: Some(source_acc.id),
+                                                                            is_folder: false,
+                                                                            link: None,
+                                                                            link_type: None,
+                                                                            name: job.name,
+                                                                            permission_id: Some(job.permission_id),
+                                                                            size: job.size,
+                                                                            source_image: source_acc.image,
+                                                                            status: job.status,
+                                                                            time: None,
+                                                                            transfer_type: TransferType::GoogleToGoogle,
+                                                                            progress: 0
+                                                                        }
                                                                     })),
                                                                 )
                                                                     .into_response());

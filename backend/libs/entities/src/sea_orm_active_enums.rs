@@ -10,6 +10,22 @@ pub enum LinkType {
     Torrent,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "payment_status")]
+pub enum PaymentStatus {
+    #[sea_orm(string_value = "error")]
+    Error,
+    #[sea_orm(string_value = "pending")]
+    Pending,
+    #[sea_orm(string_value = "authorized")]
+    Authorized,
+    #[sea_orm(string_value = "cancelled")]
+    Cancelled,
+    #[sea_orm(string_value = "captured")]
+    Captured,
+    #[sea_orm(string_value = "refunded")]
+    Refunded,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "provider")]
 pub enum Provider {
     #[sea_orm(string_value = "Google")]

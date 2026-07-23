@@ -1,0 +1,10 @@
+{
+  "name": "@repo/common",
+  
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

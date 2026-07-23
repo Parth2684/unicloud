@@ -26,9 +26,8 @@ pub async fn get_user_info(Extension(claims): Extension<Claims>) -> Result<Respo
         .column(QuotaColumn::AddOnQuota)
         .column(QuotaColumn::FreeQuota)
         .column(QuotaColumn::QuotaType)
-        .column(QuotaColumn::RemainingQuota)
-        .column(QuotaColumn::TotalQuota)
         .column(QuotaColumn::UsedQuota)
+        .column(QuotaColumn::TotalUsed)
         .into_json()
         .one(db)
         .await;

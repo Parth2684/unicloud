@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model cloud_account {
+  id                                String    @id @db.Uuid
+  user_id                           String    @db.Uuid
+  provider                          provider
+  email                             String    @unique @db.VarChar
+  access_token                      Bytes
+  refresh_token                     Bytes?
+  is_primary                        Boolean   @default(false)
+  created_at                        DateTime? @default(now()) @db.Timestamp(6)
+  expires_in                        BigInt?
+  sub                               String?   @unique @db.VarChar
+  token_expired                     Boolean   @default(false)
+  updated_at                        DateTime? @default(now()) @db.Timestamp(6)
+  image                             String?   @db.VarChar
+  is_deleted                        Boolean   @default(false)
+  users                             users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-cloudaccount-user-id")
+  job_job_from_driveTocloud_account job[]     @relation("job_from_driveTocloud_account")
+  job_job_to_driveTocloud_account   job[]     @relation("job_to_driveTocloud_account")
+}
+
+model job {
+  id                                          String         @id @db.Uuid
+  from_drive                                  String?        @db.Uuid
+  from_file_id                                String?        @db.VarChar
+  is_folder                                   Boolean?       @default(false)
+  to_drive                                    String         @db.Uuid
+  to_folder_id                                String         @db.VarChar
+  created_at                                  DateTime       @default(now()) @db.Timestamp(6)
+  status                                      status         @default(pending)
+  user_id                                     String         @db.Uuid
+  size                                        BigInt?
+  link                                        String?        @db.VarChar
+  link_type                                   link_type?
+  transfer_type                               transfer_type
+  fail_reason                                 String?        @db.VarChar
+  permission_id                               String         @db.VarChar
+  name                                        String         @default("Job") @db.VarChar
+  time                                        Int?
+  finished_at                                 DateTime?      @db.Timestamp(6)
+  cloud_account_job_from_driveTocloud_account cloud_account? @relation("job_from_driveTocloud_account", fields: [from_drive], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-job-fromDrive-id")
+  cloud_account_job_to_driveTocloud_account   cloud_account  @relation("job_to_driveTocloud_account", fields: [to_drive], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-job-toDrive-id")
+  users                                       users          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-job-user-id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model payment {
+  razorpay_payment_id String         @id @db.VarChar
+  amount              BigInt
+  currency            String         @db.Char(3)
+  created_at          DateTime       @default(now()) @db.Timestamptz(6)
+  razorpay_order_id   String?
+  payment_status      payment_status @default(pending)
+  subscription_id     String?        @db.VarChar
+  user_id             String         @db.Uuid
+  subscription        subscription?  @relation(fields: [subscription_id], references: [razorpay_subscription_id], onDelete: Restrict, onUpdate: NoAction, map: "fk-payment-subscription-id")
+  users               users          @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk-payment-user-id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model quota {
+  id           String     @id @db.Uuid
+  user_id      String     @unique @db.Uuid
+  free_quota   BigInt     @default(10737418240)
+  add_on_quota BigInt     @default(0)
+  used_quota   BigInt     @default(0)
+  quota_type   quota_type @default(Free)
+  refresh_at   DateTime   @default(dbgenerated("(((CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text))::date + 30)")) @db.Date
+  total_used   BigInt     @default(0)
+  top_up       BigInt     @default(0)
+  users        users      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-quota-user-id")
+}
+
+model seaql_migrations {
+  version    String @id @db.VarChar
+  applied_at BigInt
+}
+
+model subscription {
+  razorpay_subscription_id String    @id
+  current_period_start     DateTime  @default(dbgenerated("((CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text))::date")) @db.Date
+  current_period_end       DateTime  @db.Date
+  user_id                  String    @db.Uuid
+  plan_id                  String?   @db.VarChar
+  payment                  payment[]
+  plans                    plans?    @relation(fields: [plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-subscription-plan-id")
+  users                    users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-subscription-user-id")
+}
+
+model users {
+  id            String          @id(map: "user_pkey") @db.Uuid
+  gmail         String          @unique(map: "user_gmail_key") @db.VarChar
+  created_at    DateTime        @default(now()) @db.Timestamp(6)
+  name          String          @db.VarChar
+  image         String?         @db.VarChar
+  sub           String          @unique(map: "user_sub_key") @db.VarChar
+  cloud_account cloud_account[]
+  job           job[]
+  payment       payment[]
+  quota         quota?
+  subscription  subscription[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model plans {
+  id           String         @id @db.VarChar
+  name         String         @unique @db.VarChar
+  description  String         @db.VarChar
+  amount       BigInt
+  created_at   DateTime       @db.Timestamptz(6)
+  interval     Int
+  period       String         @db.VarChar
+  currency     String         @db.Char(3)
+  subscription subscription[]
+}
+
+enum link_type {
+  torrent
+}
+
+enum payment_status {
+  error
+  pending
+  authorized
+  cancelled
+  captured
+  refunded
+}
+
+enum provider {
+  Google
+  Mega
+}
+
+enum quota_type {
+  Free
+  Bronze
+  Silver
+  Gold
+  Platinum
+}
+
+enum status {
+  pending
+  running
+  completed
+  failed
+}
+
+enum transfer_type {
+  google_to_google
+  mega_to_google
+}

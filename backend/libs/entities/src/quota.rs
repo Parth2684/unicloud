@@ -12,17 +12,13 @@ pub struct Model {
     pub id: Uuid,
     #[sea_orm(unique)]
     pub user_id: Uuid,
-    #[sea_orm(column_type = "Float")]
     pub free_quota: i64,
-    #[sea_orm(column_type = "Float")]
     pub add_on_quota: i64,
-    #[sea_orm(column_type = "Float")]
-    pub total_quota: i64,
-    #[sea_orm(column_type = "Float")]
     pub used_quota: i64,
-    #[sea_orm(column_type = "Float")]
-    pub remaining_quota: i64,
     pub quota_type: QuotaType,
+    pub refresh_at: Date,
+    pub total_used: i64,
+    pub top_up: i64,
     #[sea_orm(
         belongs_to,
         from = "user_id",

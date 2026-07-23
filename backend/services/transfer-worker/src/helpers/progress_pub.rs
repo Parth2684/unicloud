@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 #[derive(Serialize)]
 struct JobProgress {
+    job_type: String,
     user_id: Uuid,
     job_id: Uuid,
     stage: JobStage,
@@ -21,6 +22,7 @@ pub async fn progress_pub(
 ) {
     let mut redis_conn = init_redis().await;
     match serde_json::to_string(&JobProgress {
+        job_type: String::from("job_progress"),
         user_id: user_id.to_owned(),
         job_id: job_id.to_owned(),
         stage: stage,

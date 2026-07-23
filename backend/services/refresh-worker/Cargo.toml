@@ -9,8 +9,9 @@ common = { workspace = true }
 tokio = { workspace = true }
 uuid = { version = "1.18.1", features = ["v4"] }
 entities = { workspace = true }
-sea-orm = { version = "2.0.0-rc.16", features = [ "sqlx-postgres", "runtime-async-std-native-tls", "macros" ] }
+sea-orm = { version = "2.0.0-rc.16", features = [ "sqlx-postgres", "runtime-tokio-rustls", "macros" ] }
 chrono = "0.4.42"
-reqwest = { version = "0.12.24", features = ["json"] }
+reqwest = { version = "0.12.24", default-features = false, features = ["rustls-tls", "json"] }
 serde = { workspace = true }
 axum = { version = "0.8.6", features = ["http2"] }
+tokio-cron-scheduler = "0.15.1"

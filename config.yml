@@ -1,0 +1,14 @@
+ingress:
+  - hostname: api-unicloud.parthbhosle.com
+    service: http://localhost:3000
+
+  - hostname: ws-unicloud.parthbhosle.com
+    service: http://localhost:8080
+
+  - hostname: refresh-unicloud.parthbhosle.com
+    service: http://localhost:3002
+
+  - hostname: transfer-unicloud.parthbhosle.com
+    service: http://localhost:3001
+
+  - service: http_status:404

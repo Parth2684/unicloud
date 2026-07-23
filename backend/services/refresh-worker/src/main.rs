@@ -2,9 +2,11 @@ use axum::{Router, routing::get};
 use common::{db_connect::init_db, redis_connection::init_redis};
 use redis::{AsyncTypedCommands, RedisError};
 use tokio::net::TcpListener;
+use tokio_cron_scheduler::{Job, JobScheduler};
 use uuid::Uuid;
 
-use crate::handle_refresh::handle_refresh;
+use crate::{cron::refresh_quota, handle_refresh::handle_refresh};
+mod cron;
 mod handle_refresh;
 
 #[tokio::main]
@@ -12,6 +14,30 @@ async fn main() {
     let listener = TcpListener::bind("0.0.0.0:3001").await.unwrap();
 
     let app: Router<()> = Router::new().route("/", get(|| async { "Noice" }));
+
+    let sched = JobScheduler::new().await.unwrap();
+
+    sched
+        .add(
+            Job::new_async("0 0 0 * * *", |_, _| {
+                Box::pin(async move {
+                    loop {
+                        match refresh_quota().await {
+                            Ok(_) => break,
+                            Err(err) => {
+                                eprintln!("quota refresh failed: {err}");
+                                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                            }
+                        }
+                    }
+                })
+            })
+            .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    sched.start().await.unwrap();
 
     tokio::spawn(async {
         let mut redis_conn = init_redis().await;

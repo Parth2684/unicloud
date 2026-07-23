@@ -1,2 +1,4 @@
 target
 .env
+.turbo
+node_modules 
