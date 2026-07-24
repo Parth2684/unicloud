@@ -38,6 +38,7 @@ async fn main() {
 
     tokio::spawn(subscribe(Arc::clone(&appstate)));
     let app = Router::new()
+        .route("/", any(|| async {" Noice " }))
         .route("/ws/{token}", any(websocket))
         .with_state(Arc::clone(&appstate));
 
