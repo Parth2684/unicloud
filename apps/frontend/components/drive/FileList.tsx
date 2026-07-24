@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { FileIcon, Folder, MoreVertical } from "lucide-react";
 import type { DriveFile } from "@/stores/cloud/types";
 import { formatBytes, isFolder } from "@/utils/format";
@@ -46,7 +47,9 @@ type FileRowProps = {
 function FileRow({ driveId, item, onOpenFolder }: FileRowProps) {
   const folder = isFolder(item.mimeType);
   const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const { setClipboard, deleteFile } = useCloudStore();
 
   const sizeLabel = !folder && item.size != null ? formatBytes(item.size.toString()) : "—";
@@ -63,13 +66,24 @@ function FileRow({ driveId, item, onOpenFolder }: FileRowProps) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const handleRowClick = (e: React.MouseEvent) => {
+    if (folder && !open) onOpenFolder(item);
+  };
+
+  const handleMenuToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPosition({ top: rect.bottom + 4, left: rect.right - 144 });
+    }
+    setOpen((v) => !v);
+  };
+
   return (
     <div
       role="listitem"
       tabIndex={folder ? 0 : -1}
-      onClick={() => {
-        if (folder) onOpenFolder(item);
-      }}
+      onClick={handleRowClick}
       onKeyDown={(e) => {
         if (folder && e.key === "Enter") onOpenFolder(item);
       }}
@@ -100,45 +114,52 @@ function FileRow({ driveId, item, onOpenFolder }: FileRowProps) {
 
       <div ref={menuRef} className="relative">
         <Button
+          ref={buttonRef}
           type="button"
           variant="ghost"
           size="icon-sm"
           aria-label={`Actions for ${item.name}`}
           aria-haspopup="menu"
           aria-expanded={open}
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpen((v) => !v);
-          }}
+          onClick={handleMenuToggle}
         >
           <MoreVertical className="size-4" />
         </Button>
 
-        {open && (
-          <div
-            role="menu"
-            onClick={(e) => e.stopPropagation()}
-            className="absolute top-full right-0 z-50 mt-1 w-36 overflow-hidden rounded-md border border-border bg-popover py-1 text-popover-foreground shadow-soft"
-          >
-            <MenuItem
-              onClick={() => {
-                setClipboard(item.id, item.name, driveId, "copy");
-                setOpen(false);
+        {open &&
+          createPortal(
+            <div
+              role="menu"
+              onClick={(e) => e.stopPropagation()}
+              ref={menuRef}
+              style={{
+                position: "fixed",
+                top: `${menuPosition.top}px`,
+                left: `${menuPosition.left}px`,
+                zIndex: 9999,
               }}
+              className="w-36 overflow-hidden rounded-md border border-border bg-popover py-1 text-popover-foreground shadow-soft"
             >
-              Copy
-            </MenuItem>
-            <MenuItem
-              danger
-              onClick={async () => {
-                setOpen(false);
-                await deleteFile(driveId, item.id);
-              }}
-            >
-              Delete
-            </MenuItem>
-          </div>
-        )}
+              <MenuItem
+                onClick={() => {
+                  setClipboard(item.id, item.name, driveId, "copy");
+                  setOpen(false);
+                }}
+              >
+                Copy
+              </MenuItem>
+              <MenuItem
+                danger
+                onClick={async () => {
+                  setOpen(false);
+                  await deleteFile(driveId, item.id);
+                }}
+              >
+                Delete
+              </MenuItem>
+            </div>,
+            document.body
+          )}
       </div>
     </div>
   );
