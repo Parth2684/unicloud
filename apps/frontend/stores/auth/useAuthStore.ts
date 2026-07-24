@@ -1,9 +1,9 @@
 import { create } from "zustand";
 import { AuthState, AuthAction } from "./types";
 import toast from "react-hot-toast";
-import { axiosInstance } from "../../utils/axiosInstance";
+import { fetchAuthToken, logoutRequest } from "@/api/auth";
 
-export const useAuthStore = create<AuthState & AuthAction>((set, get) => ({
+export const useAuthStore = create<AuthState & AuthAction>((set) => ({
   authUser: null,
   isLoggedIn: false,
   token: null,
@@ -13,20 +13,23 @@ export const useAuthStore = create<AuthState & AuthAction>((set, get) => ({
   },
 
   logout: async () => {
-    set({ authUser: null, isLoggedIn: false });
-    await axiosInstance.post("/auth/logout");
+    try {
+      await logoutRequest();
+    } finally {
+      set({ authUser: null, isLoggedIn: false, token: null });
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
+    }
   },
 
   setToken: async () => {
     try {
-      const res = await axiosInstance.get("/auth/token");
-      if (res.status !== 200) {
-        throw new Error("Auth Token not received");
-      }
-      set({ token: res.data.auth_token });
+      const token = await fetchAuthToken();
+      set({ token });
     } catch (e) {
       console.error(e);
-      toast.error(e as string);
+      toast.error("Failed to authenticate session");
     }
   },
 }));

@@ -1,11 +1,18 @@
 import { create } from "zustand";
 import { CloudActions, CloudState } from "./types";
-import { axiosInstance } from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 import toast from "react-hot-toast";
 import { useUserStore } from "../user/useUserStore";
+import {
+  copyFile,
+  deleteDriveAccount,
+  deleteDriveFile,
+  fetchCloudAccounts,
+  fetchFolderChildren,
+  fetchSharedDrives,
+} from "@/api/cloud";
 
-export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
+export const useCloudStore = create<CloudState & CloudActions>((set) => ({
   loading: false,
   successCloudAccounts: null,
   errorCloudAccounts: null,
@@ -16,15 +23,12 @@ export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
   setClouds: async () => {
     set({ loading: true });
     try {
-      const res = await axiosInstance.get("/cloud/get-cloud-accounts");
+      const data = await fetchCloudAccounts();
       set({
-        successCloudAccounts: res.data.google_drive_accounts,
-        errorCloudAccounts: res.data.need_refresh,
+        successCloudAccounts: data.google_drive_accounts,
+        errorCloudAccounts: data.need_refresh,
       });
-      console.log("success clouds" + get().successCloudAccounts);
-      console.log("error clouds" + get().errorCloudAccounts);
     } catch (error) {
-      console.error(error);
       if (error instanceof AxiosError && error.response?.data.message) {
         toast.error(error.response.data.message);
       } else {
@@ -38,31 +42,25 @@ export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
   setCurrentGoogleFolder: async (drive_id, folder_id) => {
     set({ loading: true });
     try {
-      if (!folder_id) {
-        const res = await axiosInstance.get(`/cloud/google/root/${drive_id}`);
-        set({ drive: res.data.files });
-      } else {
-        const res = await axiosInstance.get(`/cloud/google/folder/${drive_id}/${folder_id}`);
-        set({ drive: res.data.files });
-      }
+      const files = await fetchFolderChildren(drive_id, folder_id);
+      set({ drive: files });
     } catch (error) {
-      console.error(error);
       if (error instanceof AxiosError && error.response?.data.message) {
         toast.error(error.response.data.message);
       } else {
-        toast.error("Unexpected error fetching cloud accounts");
+        toast.error("Unexpected error fetching folder contents");
       }
     } finally {
       set({ loading: false });
     }
   },
+
   setSharedDrives: async (drive_id: string) => {
     set({ loading: true });
     try {
-      const res = await axiosInstance.get(`/cloud/google/shared_drive/${drive_id}`);
-      set({ sharedDrives: res.data.drives });
+      const drives = await fetchSharedDrives(drive_id);
+      set({ sharedDrives: drives });
     } catch (error) {
-      console.error(error);
       if (error instanceof AxiosError && error.response?.data) {
         toast.error(error.response.data.message);
       }
@@ -71,59 +69,46 @@ export const useCloudStore = create<CloudState & CloudActions>((set, get) => ({
     }
   },
 
-  setClipboard: (id: string, name: string, drive_id: string, operation: "copy" | "move") => {
+  setClipboard: (id, name, drive_id, operation) => {
     set({ clipboard: { id, name, drive_id, operation } });
   },
   clearClipboard: () => set({ clipboard: null }),
 
-  pasteHere: async (
-    from_drive: string,
-    from_file_id: string,
-    to_drive: string,
-    to_folder_id: string,
-  ) => {
+  pasteHere: async (from_drive, from_file_id, to_drive, to_folder_id) => {
     try {
-      const res = await axiosInstance.post("/cloud/google/google-copy", {
-        from_drive,
-        from_file_id,
-        to_drive,
-        to_folder_id,
-      });
+      const data = await copyFile({ from_drive, from_file_id, to_drive, to_folder_id });
       useUserStore.setState((state) => ({
-        jobs: [...state.jobs, res.data.job],
+        jobs: [...state.jobs, data.job],
       }));
-      toast.success(res.data.message);
+      toast.success(data.message);
     } catch (error) {
-      console.error(error);
       if (error instanceof AxiosError && error.response?.data) {
         toast.error(error.response.data.message);
       }
     }
   },
 
-  deleteDrive: async (drive_id: string, isExpired: boolean) => {
+  deleteDrive: async (drive_id) => {
     try {
-      const res = await axiosInstance.delete(`/cloud/google/delete-drive/${drive_id}`);
+      await deleteDriveAccount(drive_id);
       set((state) => ({
         errorCloudAccounts: state.errorCloudAccounts?.filter((acc) => acc.id !== drive_id),
         successCloudAccounts: state.successCloudAccounts?.filter((acc) => acc.info.id !== drive_id),
       }));
     } catch (error) {
-      console.error(error);
       if (error instanceof AxiosError && error.response?.data) {
         toast.error(error.response.data.message);
       }
     }
   },
 
-  deleteFile: async (drive_id: string, file_id: string) => {
+  deleteFile: async (drive_id, file_id) => {
     try {
-      await axiosInstance.delete(`/cloud/google/delete-file/${drive_id}/${file_id}`);
+      await deleteDriveFile(drive_id, file_id);
       set((state) => ({
         drive: state.drive?.filter((file) => file.id !== file_id),
       }));
     } catch (error) {
-      console.error(error);
       if (error instanceof AxiosError && error.response?.data) {
         toast.error(error.response.data.message);
       }
