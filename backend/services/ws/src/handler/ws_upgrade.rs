@@ -42,23 +42,18 @@ pub async fn websocket(
                 msg = receiver.next() => {
                     match msg {
                         Some(Ok(message)) => {
-                            if let Message::Text(text) = message {
-                                match text.as_str() {
-                                    "Refresh Token" => {
-                                        let mut redis = state.redis.clone();
-                                        if let Ok(added) = redis
-                                            .hset_nx("dedupe:queue", claims.id.to_string(), "1")
-                                            .await
-                                        {
-                                            if added {
-                                                let _ = redis.lpush("refresh:queue", claims.id.to_string()).await;
-                                            }
-                                        }
-                                    }
-                                    _ => ()
-                                };
-                            };
-
+                            if let Message::Text(text) = message && text == "Refresh Token" {
+                                let mut redis = state.redis.clone();
+                                if let Ok(added) = redis
+                                    .hset_nx("dedupe:queue", claims.id.to_string(), "1")
+                                    .await
+                                    && added
+                                {
+                                    let _ = redis
+                                        .lpush("refresh:queue", claims.id.to_string())
+                                        .await;
+                                }
+                            }
                         }
                         _ => {
                             break;

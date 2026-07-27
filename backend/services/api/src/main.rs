@@ -20,8 +20,8 @@ async fn main() {
         loop {
             ticker.tick().await;
             let client = reqwest::Client::new();
-            client.get(format!("{}/", &ENVS.transfer)).send().await.ok();
-            client.get(format!("{}/", &ENVS.refresh)).send().await.ok();
+            client.get(format!("{}/", ENVS.transfer)).send().await.ok();
+            client.get(format!("{}/", ENVS.refresh)).send().await.ok();
         }
     });
     let cors = CorsLayer::new()

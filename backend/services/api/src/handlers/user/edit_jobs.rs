@@ -46,7 +46,7 @@ pub async fn edit_job(
                         if job.status == payload.status {
                             return Err(AppError::Forbidden(Some(format!(
                                 "job status is already {:?}",
-                                &payload.status
+                                payload.status
                             ))));
                         }
                         if job.status == Status::Completed {
@@ -55,8 +55,8 @@ pub async fn edit_job(
                             ))));
                         }
                         let (_, _) = (
-                            redis_conn.lrem("processing", 1, &job.id.to_string()).await,
-                            redis_conn.lrem("copy:job", 1, &job.id.to_string()).await,
+                            redis_conn.lrem("processing", 1, job.id.to_string()).await,
+                            redis_conn.lrem("copy:job", 1, job.id.to_string()).await,
                         );
                         let mut edit_job: JobActive = job.into();
                         edit_job.status = Set(payload.status);

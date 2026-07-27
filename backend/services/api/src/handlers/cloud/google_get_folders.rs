@@ -36,25 +36,23 @@ pub async fn google_get_root(
     match google_account {
         Err(err) => {
             eprintln!("{err:?}");
-            return Err(AppError::Internal(Some(String::from(
+            Err(AppError::Internal(Some(String::from(
                 "Error connecting to database",
-            ))));
+            ))))
         }
         Ok(some) => match some {
-            None => {
-                return Err(AppError::NotFound(Some(String::from(
-                    "No Account with the id found",
-                ))));
-            }
+            None => Err(AppError::NotFound(Some(String::from(
+                "No Account with the id found",
+            )))),
             Some(acc) => match decrypt(&acc.access_token) {
                 Err(err) => {
                     eprintln!("{err:?}");
                     let mut acc: cloud_account::ActiveModel = acc.into();
                     acc.token_expired = Set(true);
                     acc.update(db).await.ok();
-                    return Err(AppError::Unauthorised(Some(String::from(
+                    Err(AppError::Unauthorised(Some(String::from(
                         "Error decrypting token please add the account again",
-                    ))));
+                    ))))
                 }
                 Ok(token) => {
                     let client = Client::new();
@@ -66,37 +64,33 @@ pub async fn google_get_root(
                     {
                         Err(err) => {
                             eprintln!("{err:?}");
-                            return Err(AppError::Internal(Some(
+                            Err(AppError::Internal(Some(
                                 "Couldn't fetch from google".to_string(),
-                            )));
+                            )))
                         }
                         Ok(res) => {
                             let res = res.json::<serde_json::Value>().await.unwrap();
                             match res.get("id") {
-                                None => {
-                                    return Err(AppError::NotFound(Some(String::from(
-                                        "Couldn't find the drive root",
-                                    ))));
-                                }
+                                None => Err(AppError::NotFound(Some(String::from(
+                                    "Couldn't find the drive root",
+                                )))),
                                 Some(id) => {
                                     let drive_id = id.as_str().unwrap().to_owned();
                                     let files = google_search_folder(&drive_id, &token).await;
                                     match files {
                                         Err(err) => {
                                             eprintln!("{err:?}");
-                                            return Err(AppError::Internal(Some(String::from(
+                                            Err(AppError::Internal(Some(String::from(
                                                 "Couldn't find root files of the google drive",
-                                            ))));
+                                            ))))
                                         }
-                                        Ok(files) => {
-                                            return Ok((
-                                                StatusCode::OK,
-                                                Json(json!({
-                                                        "files": files
-                                                })),
-                                            )
-                                                .into_response());
-                                        }
+                                        Ok(files) => Ok((
+                                            StatusCode::OK,
+                                            Json(json!({
+                                                    "files": files
+                                            })),
+                                        )
+                                            .into_response()),
                                     }
                                 }
                             }
@@ -137,9 +131,9 @@ pub async fn google_get_folders(
     match google_account {
         Err(err) => {
             eprintln!("{err:?}");
-            return Err(AppError::Internal(Some(
+            Err(AppError::Internal(Some(
                 "Error connecting to database".to_string(),
-            )));
+            )))
         }
         Ok(some_acc) => match some_acc {
             Some(acc) => match decrypt(&acc.access_token) {
@@ -148,9 +142,9 @@ pub async fn google_get_folders(
                     match res {
                         Err(err) => {
                             eprintln!("{err:?}");
-                            return Err(AppError::Internal(Some(
+                            Err(AppError::Internal(Some(
                                 "error fetching files under this folder".to_string(),
-                            )));
+                            )))
                         }
                         Ok(files) => Ok((
                             StatusCode::OK,
@@ -166,9 +160,9 @@ pub async fn google_get_folders(
                     let mut acc: cloud_account::ActiveModel = acc.into();
                     acc.token_expired = Set(true);
                     acc.update(db).await.ok();
-                    return Err(AppError::Unauthorised(Some(String::from(
+                    Err(AppError::Unauthorised(Some(String::from(
                         "Error decrypting token please add the account again",
-                    ))));
+                    ))))
                 }
             },
             None => Err(AppError::NotFound(Some(String::from(

@@ -17,6 +17,7 @@ mod m20260704_063920_remove_add_on_from_quota;
 mod m20260709_055039_add_top_up_and_checks_for_handling_no_negatives;
 mod m20260714_151743_add_plan_model;
 mod m20260727_175535_add_subscription_status;
+mod m20260727_201913_rename_error_to_failed;
 
 pub struct Migrator;
 
@@ -40,7 +41,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20260704_063920_remove_add_on_from_quota::Migration),
             Box::new(m20260709_055039_add_top_up_and_checks_for_handling_no_negatives::Migration),
             Box::new(m20260714_151743_add_plan_model::Migration),
-            Box::new(m20260727_175535_add_subscription_status::Migration)
+            Box::new(m20260727_175535_add_subscription_status::Migration),
+            Box::new(m20260727_201913_rename_error_to_failed::Migration),
         ]
     }
 }

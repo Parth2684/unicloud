@@ -4,16 +4,16 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "link_type")]
+#[sea_orm(rs_type = "Enum", db_type = "Enum", enum_name = "link_type")]
 pub enum LinkType {
     #[sea_orm(string_value = "torrent")]
     Torrent,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "payment_status")]
+#[sea_orm(rs_type = "Enum", db_type = "Enum", enum_name = "payment_status")]
 pub enum PaymentStatus {
-    #[sea_orm(string_value = "error")]
-    Error,
+    #[sea_orm(string_value = "failed")]
+    Failed,
     #[sea_orm(string_value = "pending")]
     Pending,
     #[sea_orm(string_value = "authorized")]
@@ -26,7 +26,7 @@ pub enum PaymentStatus {
     Refunded,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "provider")]
+#[sea_orm(rs_type = "Enum", db_type = "Enum", enum_name = "provider")]
 pub enum Provider {
     #[sea_orm(string_value = "Google")]
     Google,
@@ -34,7 +34,7 @@ pub enum Provider {
     Mega,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "quota_type")]
+#[sea_orm(rs_type = "Enum", db_type = "Enum", enum_name = "quota_type")]
 pub enum QuotaType {
     #[sea_orm(string_value = "Free")]
     Free,
@@ -48,7 +48,7 @@ pub enum QuotaType {
     Platinum,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "status")]
+#[sea_orm(rs_type = "Enum", db_type = "Enum", enum_name = "status")]
 pub enum Status {
     #[sea_orm(string_value = "pending")]
     Pending,
@@ -60,7 +60,19 @@ pub enum Status {
     Failed,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "transfer_type")]
+#[sea_orm(rs_type = "Enum", db_type = "Enum", enum_name = "sub_status")]
+pub enum SubStatus {
+    #[sea_orm(string_value = "active")]
+    Active,
+    #[sea_orm(string_value = "cancelled")]
+    Cancelled,
+    #[sea_orm(string_value = "expired")]
+    Expired,
+    #[sea_orm(string_value = "pending")]
+    Pending,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "Enum", db_type = "Enum", enum_name = "transfer_type")]
 pub enum TransferType {
     #[sea_orm(string_value = "google_to_google")]
     GoogleToGoogle,

@@ -26,24 +26,24 @@ pub async fn fetch_permissions(file_id: &str, token: &str) -> Result<(), String>
     match response {
         Err(err) => {
             eprintln!("error getting permission from google: {err:?}");
-            return Err(String::from(
+            Err(String::from(
                 "error getting permission from google, try again",
-            ));
+            ))
         }
         Ok(resp) => {
             let res = resp.json::<PermissionRes>().await;
             match res {
                 Err(err) => {
                     eprintln!("Error parsing data from google: {err:?}");
-                    return Err(String::from(
+                    Err(String::from(
                         "error parsing permission details from google api",
-                    ));
+                    ))
                 }
                 Ok(permission) => {
-                    if permission.capabilities.can_edit == false {
-                        return Err(String::from(
+                    if !permission.capabilities.can_edit {
+                        Err(String::from(
                             "You are not the editor or the owner of the file please try proxy tunnel",
-                        ));
+                        ))
                     } else {
                         Ok(())
                     }

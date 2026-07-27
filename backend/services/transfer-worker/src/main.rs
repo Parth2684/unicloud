@@ -22,12 +22,11 @@ async fn main() {
 
     tokio::spawn(async {
         let (mut redis_conn, db) = tokio::join!(init_redis(), init_db());
-        let multiple: usize;
-        if ENVS.environment == "PRODUCTION" {
-            multiple = 2
+        let multiple = if ENVS.environment == "PRODUCTION" {
+            2
         } else {
-            multiple = 1
-        }
+            1
+        };
         let max_workers = thread::available_parallelism()
             .map(NonZeroUsize::get)
             .unwrap_or(4)

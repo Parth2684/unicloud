@@ -34,7 +34,7 @@ pub struct Model {
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    pub users: HasOne<super::users::Entity>,
+    pub users: BelongsTo<super::users::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

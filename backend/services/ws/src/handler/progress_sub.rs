@@ -19,12 +19,9 @@ struct JobProgress {
 
 pub async fn subscribe(state: Arc<AppState>) {
     let mut pubsub = { state.pubsub.lock().await };
-    match pubsub.psubscribe("job:progress:*").await {
-        Err(err) => {
-            eprintln!("Error connecting to pubsub: {:?}", err);
-            return;
-        }
-        Ok(_) => (),
+    if let Err(err) = pubsub.psubscribe("job:progress:*").await {
+        eprintln!("Error connecting to pubsub: {:?}", err);
+        return;
     };
 
     let mut stream = pubsub.on_message();
@@ -46,13 +43,13 @@ pub async fn subscribe(state: Arc<AppState>) {
             Ok(j) => j,
         };
         {
-            if let Some(tx) = state.clients.get(&job.user_id) {
-                if let Err(err) = tx.send(serde_json::to_string(&job).unwrap()) {
-                    eprintln!(
-                        "Error sending progress of job: {:?} \n error: {:?}",
-                        job, err
-                    );
-                }
+            if let Some(tx) = state.clients.get(&job.user_id)
+                && let Err(err) = tx.send(serde_json::to_string(&job).unwrap())
+            {
+                eprintln!(
+                    "Error sending progress of job: {:?} \n error: {:?}",
+                    job, err
+                );
             }
         }
     }

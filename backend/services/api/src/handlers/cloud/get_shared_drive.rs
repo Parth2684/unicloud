@@ -44,9 +44,9 @@ pub async fn get_shared_drives(
             Some(acc) => match decrypt(&acc.access_token) {
                 Err(err) => {
                     eprintln!("{err:?}");
-                    return Err(AppError::Forbidden(Some(String::from(
+                    Err(AppError::Forbidden(Some(String::from(
                         "Couldn't decrypt the token try refreshing or re adding the account",
-                    ))));
+                    ))))
                 }
                 Ok(token) => {
                     let res = Client::new()
@@ -83,9 +83,9 @@ pub async fn get_shared_drives(
         },
         Err(err) => {
             eprintln!("{err:?}");
-            return Err(AppError::Internal(Some(String::from(
+            Err(AppError::Internal(Some(String::from(
                 "Couldn't cionnect to database",
-            ))));
+            ))))
         }
     }
 }

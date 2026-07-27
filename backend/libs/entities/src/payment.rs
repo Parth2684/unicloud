@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "payment")]
 pub struct Model {
-    #[sea_orm(column_type = "Text", unique, primary_key, auto_increment = false)]
+    #[sea_orm(primary_key, auto_increment = false)]
     pub razorpay_payment_id: String,
     pub amount: i64,
     pub currency: String,
@@ -25,7 +25,7 @@ pub struct Model {
         on_update = "NoAction",
         on_delete = "Restrict"
     )]
-    pub subscription: HasOne<super::subscription::Entity>,
+    pub subscription: BelongsTo<Option<super::subscription::Entity>>,
     #[sea_orm(
         belongs_to,
         from = "user_id",
@@ -33,7 +33,7 @@ pub struct Model {
         on_update = "NoAction",
         on_delete = "Restrict"
     )]
-    pub users: HasOne<super::users::Entity>,
+    pub users: BelongsTo<super::users::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

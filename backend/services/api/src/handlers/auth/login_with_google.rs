@@ -35,14 +35,14 @@ fn build_google_auth_url() -> Url {
     )
     .unwrap_or_else(|err| {
         eprintln!("Error building Google auth URL: {:?}", err);
-        Url::parse(&format!("{}/auth/google", &ENVS.backend_url)).unwrap()
+        Url::parse(&format!("{}/auth/google", ENVS.backend_url)).unwrap()
     })
 }
 
 pub async fn google_auth_redirect(jar: CookieJar) -> Redirect {
     match jar.get("auth_token") {
         Some(cookie) if decode_jwt(cookie.value()).is_ok() => {
-            Redirect::to(&format!("{}/home", &ENVS.frontend_url))
+            Redirect::to(&format!("{}/home", ENVS.frontend_url))
         }
         _ => Redirect::to(build_google_auth_url().as_str()),
     }
@@ -150,10 +150,7 @@ pub async fn google_auth_callback(
         None => return Err(AppError::NotFound(Some(String::from("Email not found")))),
     };
     let image: Option<String> = match user_info.get("picture") {
-        Some(val) => match val.as_str() {
-            Some(str) => Some(str.to_owned()),
-            None => None,
-        },
+        Some(val) => val.as_str().map(|s| s.to_owned()),
         None => None,
     };
 
@@ -189,13 +186,13 @@ pub async fn google_auth_callback(
         .one(db)
         .await;
 
-    if let Ok(Some(acc)) = cloud_accounts {
-        if !acc.is_primary {
-            return Err(AppError::Forbidden(Some(
-                "You Cannot Signin with this account as it was added by a different account"
-                    .to_string(),
-            )));
-        }
+    if let Ok(Some(acc)) = cloud_accounts
+        && !acc.is_primary
+    {
+        return Err(AppError::Forbidden(Some(
+            "You Cannot Signin with this account as it was added by a different account"
+                .to_string(),
+        )));
     }
 
     let final_user = match db_user {
@@ -258,15 +255,12 @@ pub async fn google_auth_callback(
                     user_id: Set(final_user.id),
                     ..Default::default()
                 };
-                match create_quota.insert(db).await {
-                    Err(err) => {
-                        eprintln!("{err:?}");
-                        return Err(AppError::Internal(Some(String::from(
-                            "Error creating a quota for you please try again",
-                        ))));
-                    }
-                    Ok(_) => (),
-                };
+                if let Err(err) = create_quota.insert(db).await {
+                    eprintln!("{err:?}");
+                    return Err(AppError::Internal(Some(String::from(
+                        "Error creating a quota for you please try again",
+                    ))));
+                }
             }
         },
     }
@@ -288,11 +282,11 @@ pub async fn google_auth_callback(
         .secure(secure)
         .expires(expiry_time);
 
-    if &ENVS.environment == "PRODUCTION" {
-        if let Some(x) = &ENVS.domain {
-            cookie = cookie.domain(x);
-        }
+    if &ENVS.environment == "PRODUCTION"
+        && let Some(x) = &ENVS.domain
+    {
+        cookie = cookie.domain(x);
     }
     jar = jar.clone().add(cookie);
-    Ok((jar, Redirect::to(&format!("{}/home", &ENVS.frontend_url))).into_response())
+    Ok((jar, Redirect::to(&format!("{}/home", ENVS.frontend_url))).into_response())
 }

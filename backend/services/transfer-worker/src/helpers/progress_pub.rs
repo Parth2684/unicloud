@@ -25,9 +25,9 @@ pub async fn progress_pub(
         job_type: String::from("job_progress"),
         user_id: user_id.to_owned(),
         job_id: job_id.to_owned(),
-        stage: stage,
+        stage,
         message: message.to_owned(),
-        progress: progress,
+        progress,
     }) {
         Err(err) => eprintln!("error serializing progress: {err:?}"),
         Ok(job) => {
