@@ -18,6 +18,27 @@ export const createSubscription = async (req: Request, res: Response) => {
     })
     return
   }
+
+  try {
+    const plan = await prisma.plans.findUnique({
+      where: {
+        id: parsedBody.data.planId
+      }
+    })
+    if (plan === null) {
+      res.status(404).json({
+        message: "Plan with the following id was not found"
+      })
+      return
+    }
+  } catch (err) {
+    console.error("error getting plan from database")
+    res.status(500).json({
+      message: "Server Error fetching data from database"
+    })
+    return
+  }
+  
   try {
     const razorpaySubscription = await razorpayInstance.subscriptions.create({
       plan_id: parsedBody.data.planId,
@@ -48,6 +69,5 @@ export const createSubscription = async (req: Request, res: Response) => {
       message: "Server | Razorpay error creating subscription"
     })
     return
-  }
-  
+  }  
 }
