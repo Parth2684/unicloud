@@ -66,7 +66,7 @@ function FileRow({ driveId, item, onOpenFolder }: FileRowProps) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleRowClick = (e: React.MouseEvent) => {
+  const handleRowClick = () => {
     if (folder && !open) onOpenFolder(item);
   };
 

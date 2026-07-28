@@ -1,10 +1,14 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": ["DATABASE_URL"],
+  "globalEnv": ["DATABASE_URL", "RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "JWT_SECRET", "PORT"],
   "tasks": {
+    "lint": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
     "build": {
-      "dependsOn": ["^build", "^db:generate"], 
+      "dependsOn": ["^build", "^db:generate"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
     },

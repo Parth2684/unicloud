@@ -55,7 +55,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     req.user = parsedDecoded.data;
     next()
   } catch (err) {
-    console.error("Error finding user")
+    console.error("Error finding user", err)
     res.status(500).json({
       messahe: "Internal Server error: could not find user in the database"
     })

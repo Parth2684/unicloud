@@ -27,16 +27,17 @@ export function CommandPalette() {
   const drive = useCloudStore((s) => s.drive);
   const successCloudAccounts = useCloudStore((s) => s.successCloudAccounts);
 
+  const close = () => {
+    setQuery("");
+    setActive(0);
+    setCommandOpen(false);
+  };
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!open) {
-      setQuery("");
-      setActive(0);
-      return;
-    }
+    if (!open) return;
     const t = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(t);
   }, [open]);
@@ -141,23 +142,20 @@ export function CommandPalette() {
     });
   }, [query, successCloudAccounts, favorites, recent, drive, getLastLocation, navigateTo, router]);
 
-  useEffect(() => {
-    setActive(0);
-  }, [query]);
 
   if (!open) return null;
 
   const runItem = (item: PaletteItem) => {
-    setCommandOpen(false);
+    close()
     item.run();
   };
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-start justify-center bg-black/40 p-4 pt-[12vh] backdrop-blur-[1px]"
+      className="fixed inset-0 z-60 flex items-start justify-center bg-black/40 p-4 pt-[12vh] backdrop-blur-[1px]"
       role="presentation"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) setCommandOpen(false);
+        if (e.target === e.currentTarget) close()
       }}
     >
       <div
@@ -171,7 +169,10 @@ export function CommandPalette() {
           <Input
             ref={inputRef}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setActive(0)
+            } }
             placeholder="Search drives and folders…"
             className="border-0 shadow-none focus-visible:ring-0"
             aria-autocomplete="list"
@@ -179,7 +180,7 @@ export function CommandPalette() {
             onKeyDown={(e) => {
               if (e.key === "Escape") {
                 e.preventDefault();
-                setCommandOpen(false);
+                close()
               } else if (e.key === "ArrowDown") {
                 e.preventDefault();
                 setActive((i) => Math.min(i + 1, Math.max(items.length - 1, 0)));

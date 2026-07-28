@@ -45,7 +45,7 @@ export default function TermsOfServicePage() {
 
         <h2 className="text-2xl font-semibold">6. Disclaimer</h2>
         <p>
-          The service is provided "as is" without warranties of any kind. We are not liable for data
+          The service is provided &quot;as is&quot; without warranties of any kind. We are not liable for data
           loss, service interruptions, or third-party failures.
         </p>
 

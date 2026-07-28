@@ -1,34 +1,18 @@
-const { resolve } = require("node:path");
+import { defineConfig, globalIgnores } from "eslint/config";
+import pluginNext from "@next/eslint-plugin-next";
+import { config as reactConfig } from "./react.js";
 
-const project = resolve(process.cwd(), "tsconfig.json");
-
-/** @type {import("eslint").Linter.Config} */
-module.exports = {
-  extends: [
-    "eslint:recommended",
-    "prettier",
-    require.resolve("@vercel/style-guide/eslint/next"),
-    "turbo",
-  ],
-  globals: {
-    React: true,
-    JSX: true,
-  },
-  env: {
-    node: true,
-  },
-  plugins: ["only-warn"],
-  settings: {
-    "import/resolver": {
-      typescript: {
-        project,
-      },
-    },
-  },
-  ignorePatterns: [
-    // Ignore dotfiles
-    ".*.js",
-    "node_modules/",
-  ],
-  overrides: [{ files: ["*.js?(x)", "*.ts?(x)"] }],
-};
+/**
+ * A custom ESLint configuration for libraries that use Next.js.
+ */
+export const config = defineConfig(
+  reactConfig,
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+  pluginNext.configs["core-web-vitals"]
+);

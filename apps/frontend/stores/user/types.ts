@@ -8,14 +8,14 @@ export enum Quota {
 export interface UserInfo {
   gmail: string;
   created_at: Date;
-  free_quota: Number;
-  add_on_quota: Number;
+  free_quota: number;
+  add_on_quota: number;
   image: string;
   name: string;
   quota_type: Quota;
-  remaining_quota: Number;
-  total_quota: Number;
-  used_quota: Number;
+  remaining_quota: number;
+  total_quota: number;
+  used_quota: number;
 }
 
 export enum TransferType {

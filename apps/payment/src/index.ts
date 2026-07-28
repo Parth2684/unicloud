@@ -2,7 +2,7 @@ import express, { type Request, type Response } from "express"
 import { authMiddleware } from "./middleware/auth"
 import subscriptionRouter from "./routers/subscription"
 
-const port = process.env.PORT!
+const port = process.env.PORT ?? 3003
 const app = express()
 
 app.get("/", (_: Request, res: Response) => res.send("Noice"))

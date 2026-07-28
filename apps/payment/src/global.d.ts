@@ -1,4 +1,3 @@
-import { Request } from "express";
 import type { DecodedUser } from "./middleware/auth";
 
 declare global {

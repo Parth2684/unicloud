@@ -5,7 +5,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useEffectEvent,
   useState,
   type ReactNode,
 } from "react";
@@ -23,38 +22,40 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function readStoredTheme(): ThemeMode {
   if (typeof window === "undefined") return "system";
+
   const stored = localStorage.getItem(STORAGE_KEYS.theme);
-  if (stored === "light" || stored === "dark" || stored === "system") return stored;
+
+  if (stored === "light" || stored === "dark" || stored === "system") {
+    return stored;
+  }
+
   return "system";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>("system");
-  const [resolved, setResolved] = useState<"light" | "dark">("light");
+  const [theme, setThemeState] = useState<ThemeMode>(() => readStoredTheme());
 
-  const syncTheme = useEffectEvent((mode: ThemeMode) => {
-    const next = resolveTheme(mode);
-    setResolved(next);
-    applyThemeClass(next);
-  });
+  const resolved = resolveTheme(theme);
 
   useEffect(() => {
-    const initial = readStoredTheme();
-    setThemeState(initial);
-    syncTheme(initial);
+    applyThemeClass(resolved);
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
+
     const onChange = () => {
-      if (readStoredTheme() === "system") syncTheme("system");
+      if (readStoredTheme() === "system") {
+        applyThemeClass(resolveTheme("system"));
+      }
     };
+
     mq.addEventListener("change", onChange);
+
     return () => mq.removeEventListener("change", onChange);
-  }, []);
+  }, [resolved]);
 
   const setTheme = useCallback((mode: ThemeMode) => {
     setThemeState(mode);
     localStorage.setItem(STORAGE_KEYS.theme, mode);
-    syncTheme(mode);
   }, []);
 
   const toggleTheme = useCallback(() => {
@@ -62,7 +63,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [resolved, setTheme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, resolved, setTheme, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        resolved,
+        setTheme,
+        toggleTheme,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
@@ -70,6 +78,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function useTheme() {
   const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
+
+  if (!ctx) {
+    throw new Error("useTheme must be used within ThemeProvider");
+  }
+
   return ctx;
 }

@@ -32,7 +32,7 @@ export const createSubscription = async (req: Request, res: Response) => {
       return
     }
   } catch (err) {
-    console.error("error getting plan from database")
+    console.error("error getting plan from database", err)
     res.status(500).json({
       message: "Server Error fetching data from database"
     })
