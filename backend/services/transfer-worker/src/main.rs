@@ -44,6 +44,7 @@ async fn main() {
                     None => continue,
                     Some(id) => {
                         let job_id = Uuid::parse_str(&id).unwrap();
+                        println!("{:?}", job_id);
                         let job = JobEntity::find()
                             .filter(JobColumn::Id.eq(job_id))
                             .one(db)

@@ -7,6 +7,12 @@ import { useTheme } from "@/components/theme/ThemeProvider";
 export function ThemeToggle() {
   const { resolved, toggleTheme } = useTheme();
 
+  if (typeof window === "undefined") {
+    return (
+      <Button variant="ghost" size="icon-sm" disabled />
+    );
+  }
+
   return (
     <Button
       type="button"
