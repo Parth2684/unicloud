@@ -3,12 +3,14 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use axum_extra::extract::cookie::CookieJar;
+use oasgen::oasgen;
 use serde_json::json;
 
+use crate::impl_oaschema::OaCookieJar;
 use crate::utils::app_errors::AppError;
 
-pub async fn get_cookie(jar: CookieJar) -> Result<Response, AppError> {
+#[oasgen]
+pub async fn get_cookie(jar: OaCookieJar) -> Result<Response, AppError> {
     let cookie = jar.get("auth_token");
     match cookie {
         Some(token) => {

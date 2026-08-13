@@ -3,6 +3,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use chrono::{DateTime, Utc};
 use common::{db_connect::init_db, jwt_config::Claims};
 use entities::{
     quota::Column as QuotaColumn,
@@ -12,6 +13,14 @@ use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect, RelationTrait}
 use serde_json::json;
 
 use crate::utils::app_errors::AppError;
+
+pub struct UserInfo {
+    gmail: String,
+    created_at: DateTime<Utc>,
+    free_quota: i64,
+    add_on_quota: i64,
+    image: String,
+}
 
 pub async fn get_user_info(Extension(claims): Extension<Claims>) -> Result<Response, AppError> {
     let db = init_db().await;
@@ -28,10 +37,10 @@ pub async fn get_user_info(Extension(claims): Extension<Claims>) -> Result<Respo
         .column(QuotaColumn::QuotaType)
         .column(QuotaColumn::UsedQuota)
         .column(QuotaColumn::TotalUsed)
-        .into_json()
         .one(db)
         .await;
     if let Ok(Some(user_info)) = info {
+        
         Ok((
             StatusCode::OK,
             Json(json!({

@@ -128,6 +128,25 @@ pub async fn get_cloud_accounts(
             Err(err_acc) => need_refresh.push(err_acc),
         }
     }
+    let acc_future = google_drive_accounts.iter().map(|acc| {
+        CloudAccountEntity::find()
+            .filter(CloudAccountColumn::Id.eq(acc.info.id))
+            .one(db)
+    });
+
+    let accs = join_all(acc_future).await;
+    let update_acc = accs.into_iter().filter_map(|acc| {
+        if let Ok(Some(account)) = acc {
+            let mut account: CloudAccountActive = account.into();
+            account.token_expired = Set(false);
+            Some(account.update(db))
+        }else {
+            None
+        }
+    });
+
+    join_all(update_acc).await;
+    
     Ok((
         StatusCode::OK,
         Json(json!({

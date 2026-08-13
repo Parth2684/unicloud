@@ -1,5 +1,6 @@
+use crate::impl_oaschema::OaRedirect;
 use crate::{handlers::auth::login_with_google::AuthRequest, utils::app_errors::AppError};
-use axum::{Extension, extract::Query, response::Redirect};
+use axum::{Extension, extract::Query};
 use chrono::Utc;
 use common::db_connect::init_db;
 use common::encrypt::encrypt;
@@ -10,12 +11,14 @@ use entities::cloud_account::{
     Model as CloudAccountModel,
 };
 use entities::users::{Entity as UserEntity, Model as UserModel};
+use oasgen::oasgen;
 use reqwest::Client;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, DbErr, EntityTrait, QueryFilter};
 use url::Url;
 use uuid::Uuid;
 
-pub async fn drive_auth_redirect() -> Redirect {
+#[oasgen]
+pub async fn drive_auth_redirect() -> OaRedirect {
     let auth_url = Url::parse_with_params(
         "https://accounts.google.com/o/oauth2/v2/auth",
         [
@@ -32,18 +35,21 @@ pub async fn drive_auth_redirect() -> Redirect {
         ],
     );
     match auth_url {
-        Ok(uri) => Redirect::to(uri.as_str()),
+        Ok(uri) => OaRedirect::to(uri.as_str()),
         Err(err) => {
             eprintln!("Error Parsing uri {:?}", err);
-            Redirect::to(&format!("{}/auth/drive", ENVS.backend_url))
+            OaRedirect::to(&format!("{}/auth/drive", ENVS.backend_url))
         }
     }
 }
 
+
+
+#[oasgen]
 pub async fn drive_auth_callback(
     Extension(claims): Extension<Claims>,
     Query(params): Query<AuthRequest>,
-) -> Result<Redirect, AppError> {
+) -> Result<OaRedirect, AppError> {
     let client = Client::new();
     let token_url = String::from("https://oauth2.googleapis.com/token");
     let client_id = &ENVS.google_drive_client_id;
@@ -272,7 +278,7 @@ pub async fn drive_auth_callback(
                 }
             };
 
-            Ok(Redirect::to(&format!("{}/home", ENVS.frontend_url)))
+            Ok(OaRedirect::to(&format!("{}/home", ENVS.frontend_url)))
         }
         None => {
             let (cloud_account, user_account): (
@@ -321,7 +327,7 @@ pub async fn drive_auth_callback(
                     cloud.token_expired = Set(false);
 
                     match cloud.update(db).await {
-                        Ok(_) => Ok(Redirect::to(&format!("{}/home", ENVS.frontend_url))),
+                        Ok(_) => Ok(OaRedirect::to(&format!("{}/home", ENVS.frontend_url))),
                         Err(err) => Err(AppError::Internal(Some(err.to_string()))),
                     }
                 }
@@ -344,7 +350,7 @@ pub async fn drive_auth_callback(
                         ..Default::default()
                     };
                     match insert_cloud.insert(db).await {
-                        Ok(_) => Ok(Redirect::to(&format!("{}/home", ENVS.frontend_url))),
+                        Ok(_) => Ok(OaRedirect::to(&format!("{}/home", ENVS.frontend_url))),
                         Err(_) => Err(AppError::Internal(Some(String::from(
                             "Couldn't create cloud account",
                         )))),

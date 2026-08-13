@@ -1,9 +1,10 @@
 use axum::Json;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use oasgen::OaSchema;
 use serde_json::json;
 
-#[derive(Debug)]
+#[derive(Debug, OaSchema)]
 pub enum AppError {
     Unauthorised(Option<String>),
     NotFound(Option<String>),

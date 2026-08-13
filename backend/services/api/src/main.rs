@@ -12,18 +12,10 @@ use tower_http::cors::{AllowHeaders, CorsLayer};
 mod handlers;
 mod routers;
 mod utils;
+mod impl_oaschema;
 
 #[tokio::main]
 async fn main() {
-    tokio::spawn(async {
-        let mut ticker = interval(Duration::from_secs(120));
-        loop {
-            ticker.tick().await;
-            let client = reqwest::Client::new();
-            client.get(format!("{}/", ENVS.transfer)).send().await.ok();
-            client.get(format!("{}/", ENVS.refresh)).send().await.ok();
-        }
-    });
     let cors = CorsLayer::new()
         .allow_origin(
             ENVS.frontend_url
@@ -41,6 +33,8 @@ async fn main() {
             Method::OPTIONS,
         ]);
 
+    
+    
     let app = Router::<()>::new()
         .route("/", get(|| async { "Hello World" }))
         .nest("/api/v1/auth", auth_routes())
