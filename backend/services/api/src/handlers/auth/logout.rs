@@ -1,11 +1,8 @@
-use axum::{body::Body, response::{IntoResponse, Redirect, Response}};
+use axum::response::{IntoResponse, Redirect};
+use axum_extra::extract::CookieJar;
 use common::export_envs::ENVS;
-use oasgen::oasgen;
 
-use crate::impl_oaschema::OaCookieJar;
-
-#[oasgen]
-pub async fn logout(jar: OaCookieJar) -> (OaCookieJar, Response<Body>) {
+pub async fn logout(jar: CookieJar) -> impl IntoResponse {
     let jar = jar.remove("auth_token");
     (
         jar,

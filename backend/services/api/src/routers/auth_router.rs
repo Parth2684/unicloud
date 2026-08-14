@@ -1,7 +1,7 @@
 use axum::{
     Router, middleware,
+    routing::{get, post},
 };
-use oasgen::Server;
 
 use crate::{
     handlers::auth::{
@@ -14,26 +14,15 @@ use crate::{
 };
 
 pub fn auth_routes() -> Router {
-    let protected_routes_openapi = Server::axum()
-        .get("/token", get_cookie)
-        .get("/drive", drive_auth_redirect)
-        .get("/drive/callback", drive_auth_callback)
-        .post("/logout", logout)
-        .freeze();
+    let protected_routes = Router::new()
+        .route("/token", get(get_cookie))
+        .route("/drive", get(drive_auth_redirect))
+        .route("/drive/callback", get(drive_auth_callback))
+        .route("/logout", post(logout))
+        .layer(middleware::from_fn(auth_middleware));
 
-    let protected_routes: Router<()> =
-            protected_routes_openapi.into_router()
-            .layer(middleware::from_fn(auth_middleware));
-    
-    let unprotected_routes_openapi = Server::axum()
-        .get("/google", google_auth_redirect)
-        .get("/google/callback", google_auth_callback)
-        .freeze();
-
-    let unprotected_routes: Router<()> =
-            unprotected_routes_openapi.into_router();
-    
     Router::new()
         .merge(protected_routes)
-        .merge(unprotected_routes)
+        .route("/google", get(google_auth_redirect))
+        .route("/google/callback", get(google_auth_callback))
 }

@@ -10,7 +10,6 @@ use common::jwt_config::{create_jwt, decode_jwt};
 use entities::quota::{ActiveModel as QuotaActive, Column as QuotaColumn, Entity as QuotaEntity};
 use entities::users::{Column as UserColumn, Entity as UserEntity};
 use entities::{cloud_account, users};
-use oasgen::OaSchema;
 use reqwest::Client;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter};
@@ -49,7 +48,7 @@ pub async fn google_auth_redirect(jar: CookieJar) -> Redirect {
     }
 }
 
-#[derive(Serialize, Deserialize, OaSchema)]
+#[derive(Serialize, Deserialize)]
 pub struct AuthRequest {
     pub code: String,
     pub state: Option<String>,

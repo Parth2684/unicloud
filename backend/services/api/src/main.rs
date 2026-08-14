@@ -1,18 +1,14 @@
-use std::time::Duration;
-
 use crate::routers::{
     auth_router::auth_routes, cloud_router::cloud_router, user_router::user_router,
 };
 use axum::{Router, http::HeaderValue, routing::get};
 use common::export_envs::ENVS;
 use http::Method;
-use tokio::time::interval;
 use tower_http::cors::{AllowHeaders, CorsLayer};
 
 mod handlers;
 mod routers;
 mod utils;
-mod impl_oaschema;
 
 #[tokio::main]
 async fn main() {
