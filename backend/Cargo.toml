@@ -2,6 +2,12 @@
 resolver = "3"
 members = ["services/api", "libs/entities", "migration", "services/ws", "libs/common", "services/refresh-worker", "services/transfer-worker"]
 
+[profile.dev]
+opt-level = 0
+debug = 1
+incremental = true
+codegen-units = 256
+
 [profile.release.package."*"]
 opt-level = 3
 
@@ -23,5 +29,4 @@ entities = { path = "libs/entities" }
 common = { path = "libs/common" }
 serde = "1.0.228"
 redis = { version = "0.32.7", features = ["connection-manager", "tokio-comp"] }
-tokio-tungstenite = { version = "0.28", default-features = false, features = ["rustls-tls-webpki-roots"] }
 sea-orm = { version = "2.0.0", features = [ "sqlx-postgres", "runtime-tokio-rustls", "macros" ] }
