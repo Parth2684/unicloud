@@ -54,7 +54,7 @@ export default function InfoPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Stat label="Member Since" value={formatDate(userInfo.created_at)} />
             <Stat label="Quota Type" value={String(userInfo.quota_type)} />
-            <Stat label="Total Quota" value={formatBytes(Number(userInfo.total_quota))} />
+            <Stat label="Total Used" value={formatBytes(Number(userInfo.total_used))} />
             <Stat label="Used Quota" value={formatBytes(Number(userInfo.used_quota))} />
             <Stat label="Remaining Quota" value={formatBytes(Number(userInfo.remaining_quota))} />
             <Stat label="Free Quota" value={formatBytes(Number(userInfo.free_quota))} />

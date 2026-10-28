@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FileIcon, Folder, MoreVertical } from "lucide-react";
 import type { DriveFile } from "@/stores/cloud/types";
@@ -16,22 +16,46 @@ type FileListProps = {
 };
 
 export function FileList({ items, driveId, onOpenFolder }: FileListProps) {
+  const [sort, setSort] = useState("name");
+  const sortedItems = useMemo(
+    () =>
+      [...items].sort((a, b) => {
+        const foldersFirst = Number(isFolder(b.mimeType)) - Number(isFolder(a.mimeType));
+        if (foldersFirst) return foldersFirst;
+        if (sort === "size") return Number(b.size ?? 0) - Number(a.size ?? 0);
+        if (sort === "modified") {
+          const timestamp = (file: DriveFile) =>
+            Date.parse(file.modifiedTime || file.createdTime || "") || 0;
+          return timestamp(b) - timestamp(a);
+        }
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+      }),
+    [items, sort],
+  );
+
   return (
     <div className="flex h-full min-h-0 flex-col text-sm">
-      <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-2 border-b border-border bg-muted/50 px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      <label className="flex items-center justify-end gap-2 border-b border-border px-4 py-2 text-xs text-muted-foreground">
+        Sort by
+        <select
+          value={sort}
+          onChange={(event) => setSort(event.target.value)}
+          className="rounded border border-input bg-surface px-2 py-1 text-foreground"
+        >
+          <option value="name">Name (A–Z)</option>
+          <option value="modified">Recently modified</option>
+          <option value="size">Largest first</option>
+        </select>
+      </label>
+      <div className="grid grid-cols-[minmax(0,1fr)_5rem_auto] sm:grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-2 border-b border-border bg-muted/50 px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
         <span>Name</span>
         <span className="text-right sm:pl-4 sm:text-left">Size</span>
         <span className="hidden text-right sm:block">Modified</span>
         <span className="sr-only">Actions</span>
       </div>
       <div className="flex-1 overflow-auto" role="list" aria-label="Files">
-        {items.map((item) => (
-          <FileRow
-            key={item.id}
-            driveId={driveId}
-            item={item}
-            onOpenFolder={onOpenFolder}
-          />
+        {sortedItems.map((item) => (
+          <FileRow key={item.id} driveId={driveId} item={item} onOpenFolder={onOpenFolder} />
         ))}
       </div>
     </div>
@@ -57,14 +81,31 @@ function FileRow({ driveId, item, onOpenFolder }: FileRowProps) {
   const modifiedLabel = modifiedDate ? new Date(modifiedDate).toLocaleDateString() : "—";
 
   useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false);
+      const target = e.target as Node;
+      if (!menuRef.current?.contains(target) && !buttonRef.current?.contains(target)) close();
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        close();
+        buttonRef.current?.focus();
       }
     };
+    menuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+    document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", close, true);
+    };
+  }, [open]);
 
   const handleRowClick = () => {
     if (folder && !open) onOpenFolder(item);
@@ -74,7 +115,10 @@ function FileRow({ driveId, item, onOpenFolder }: FileRowProps) {
     e.stopPropagation();
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      setMenuPosition({ top: rect.bottom + 4, left: rect.right - 144 });
+      setMenuPosition({
+        top: Math.max(8, Math.min(rect.bottom + 4, window.innerHeight - 100)),
+        left: Math.max(8, Math.min(rect.right - 144, window.innerWidth - 152)),
+      });
     }
     setOpen((v) => !v);
   };
@@ -85,10 +129,14 @@ function FileRow({ driveId, item, onOpenFolder }: FileRowProps) {
       tabIndex={folder ? 0 : -1}
       onClick={handleRowClick}
       onKeyDown={(e) => {
-        if (folder && e.key === "Enter") onOpenFolder(item);
+        if (e.target !== e.currentTarget) return;
+        if (folder && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onOpenFolder(item);
+        }
       }}
       className={cn(
-        "relative grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-2 px-4 py-2 text-foreground transition-colors",
+        "relative grid grid-cols-[minmax(0,1fr)_5rem_auto] sm:grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-2 px-4 py-2 text-foreground transition-colors",
         "hover:bg-surface-hover",
         folder ? "cursor-pointer" : "cursor-default opacity-90",
       )}
@@ -102,7 +150,9 @@ function FileRow({ driveId, item, onOpenFolder }: FileRowProps) {
         >
           {folder ? <Folder className="size-3.5" /> : <FileIcon className="size-3.5" />}
         </div>
-        <span className="truncate">{item.name}</span>
+        <span className="truncate" title={item.name}>
+          {item.name}
+        </span>
       </div>
 
       <div className="text-right text-xs text-muted-foreground sm:pl-4 sm:text-left">
@@ -112,7 +162,7 @@ function FileRow({ driveId, item, onOpenFolder }: FileRowProps) {
         {modifiedLabel}
       </div>
 
-      <div ref={menuRef} className="relative">
+      <div className="relative">
         <Button
           ref={buttonRef}
           type="button"
@@ -158,7 +208,7 @@ function FileRow({ driveId, item, onOpenFolder }: FileRowProps) {
                 Delete
               </MenuItem>
             </div>,
-            document.body
+            document.body,
           )}
       </div>
     </div>

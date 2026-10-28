@@ -12,8 +12,13 @@ import {
   fetchSharedDrives,
 } from "@/api/cloud";
 
+let folderRequest = 0;
+
 export const useCloudStore = create<CloudState & CloudActions>((set) => ({
   loading: false,
+  folderLoading: false,
+  folderError: null,
+  folderLocation: null,
   successCloudAccounts: null,
   errorCloudAccounts: null,
   drive: null,
@@ -40,18 +45,26 @@ export const useCloudStore = create<CloudState & CloudActions>((set) => ({
   },
 
   setCurrentGoogleFolder: async (drive_id, folder_id) => {
-    set({ loading: true });
+    const request = ++folderRequest;
+    set({
+      folderLoading: true,
+      folderError: null,
+      folderLocation: `${drive_id}:${folder_id ?? "root"}`,
+      drive: null,
+    });
     try {
       const files = await fetchFolderChildren(drive_id, folder_id);
-      set({ drive: files });
+      if (request === folderRequest) set({ drive: files });
     } catch (error) {
-      if (error instanceof AxiosError && error.response?.data.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error("Unexpected error fetching folder contents");
-      }
+      if (request !== folderRequest) return;
+      const message =
+        error instanceof AxiosError && error.response?.data?.message
+          ? error.response.data.message
+          : "Unable to load this folder. Please try again.";
+      set({ folderError: message });
+      toast.error(message);
     } finally {
-      set({ loading: false });
+      if (request === folderRequest) set({ folderLoading: false });
     }
   },
 

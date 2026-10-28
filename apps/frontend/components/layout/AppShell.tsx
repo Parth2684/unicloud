@@ -12,8 +12,6 @@ import { cn } from "@/lib/utils";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const hydrate = useNavigationStore((s) => s.hydrate);
-  const driveId = useNavigationStore((s) => s.driveId);
-  const folderId = useNavigationStore((s) => s.folderId);
 
   useKeyboardShortcuts();
 
@@ -30,17 +28,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <Sidebar mobile />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopToolbar
-          driveId={pathDriveId ?? driveId ?? undefined}
-          folderId={pathFolderId ?? folderId}
-          showDriveChrome={onDrive}
-        />
-        <main
-          className={cn(
-            "min-h-0 flex-1 overflow-auto",
-            onDrive && "flex flex-col",
-          )}
-        >
+        <TopToolbar driveId={pathDriveId} folderId={pathFolderId} showDriveChrome={onDrive} />
+        <main className={cn("min-h-0 flex-1 overflow-auto", onDrive && "flex flex-col")}>
           {children}
         </main>
       </div>

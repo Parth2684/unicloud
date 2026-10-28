@@ -18,28 +18,28 @@ type DriveExplorerProps = {
 
 export function DriveExplorer({ drive_id, folder_id }: DriveExplorerProps) {
   const router = useRouter();
-  const { setCurrentGoogleFolder, drive, loading } = useCloudStore();
   const {
-    setLocation,
-    getCachedPath,
-    folderFilter,
-    path,
-    navigateTo,
-    setTreeChildren,
-  } = useNavigationStore();
+    setCurrentGoogleFolder,
+    drive,
+    folderLoading: loading,
+    folderError,
+    folderLocation,
+  } = useCloudStore();
+  const { setLocation, getCachedPath, folderFilter, path, navigateTo, setTreeChildren } =
+    useNavigationStore();
 
   useEffect(() => {
     setCurrentGoogleFolder(drive_id, folder_id);
   }, [drive_id, folder_id, setCurrentGoogleFolder]);
 
   useEffect(() => {
-    if (!Array.isArray(drive)) return;
+    if (!Array.isArray(drive) || folderLocation !== locationKey(drive_id, folder_id)) return;
     const key = locationKey(drive_id, folder_id);
     setTreeChildren(
       key,
       drive.filter((f) => isFolder(f.mimeType)).map((f) => ({ id: f.id, name: f.name })),
     );
-  }, [drive, drive_id, folder_id, setTreeChildren]);
+  }, [drive, drive_id, folder_id, folderLocation, setTreeChildren]);
 
   useEffect(() => {
     const state = useNavigationStore.getState();
@@ -58,14 +58,9 @@ export function DriveExplorer({ drive_id, folder_id }: DriveExplorerProps) {
     const cached = getCachedPath(drive_id, folder_id);
     const nextPath =
       cached ??
-      (folder_id
-        ? [...rootPath(), { id: folder_id, name: "Current folder" }]
-        : rootPath());
+      (folder_id ? [...rootPath(), { id: folder_id, name: "Current folder" }] : rootPath());
 
-    setLocation(
-      { driveId: drive_id, folderId: folder_id, path: nextPath },
-      { pushHistory: true },
-    );
+    setLocation({ driveId: drive_id, folderId: folder_id, path: nextPath }, { pushHistory: true });
   }, [drive_id, folder_id, getCachedPath, setLocation]);
 
   const filtered = useMemo(() => {
@@ -90,6 +85,20 @@ export function DriveExplorer({ drive_id, folder_id }: DriveExplorerProps) {
         {loading ? (
           <div className="flex flex-1 items-center justify-center" role="status" aria-live="polite">
             <Spinner />
+          </div>
+        ) : folderError ? (
+          <div
+            className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center"
+            role="alert"
+          >
+            <p className="text-sm text-destructive">{folderError}</p>
+            <button
+              type="button"
+              className="text-sm text-primary underline"
+              onClick={() => setCurrentGoogleFolder(drive_id, folder_id)}
+            >
+              Try again
+            </button>
           </div>
         ) : filtered.length > 0 ? (
           <FileList items={filtered} driveId={drive_id} onOpenFolder={openFolder} />

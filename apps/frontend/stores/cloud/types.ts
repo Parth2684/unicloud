@@ -45,6 +45,9 @@ export interface ClipboardItem {
 
 export type CloudState = {
   loading: boolean;
+  folderLoading: boolean;
+  folderError: string | null;
+  folderLocation: string | null;
   successCloudAccounts: SuccessCloudAccount[] | null;
   errorCloudAccounts: ErrorCloudAccount[] | null;
   drive: DriveFile[] | null;

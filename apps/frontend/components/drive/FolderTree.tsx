@@ -32,9 +32,7 @@ export function FolderTree({ driveId, driveName = "My Drive" }: FolderTreeProps)
         name={driveName}
         depth={0}
         path={rootPath(driveName)}
-        selectedRef={
-          currentDriveId === driveId && !currentFolderId ? selectedRef : undefined
-        }
+        selectedRef={selectedRef}
         onNavigate={(href) => router.push(href)}
       />
     </div>
@@ -64,22 +62,22 @@ function FolderTreeNode({
   const expanded = useNavigationStore((s) => !!s.expanded[key]);
   const toggleExpanded = useNavigationStore((s) => s.toggleExpanded);
   const setExpanded = useNavigationStore((s) => s.setExpanded);
-  const getTreeChildren = useNavigationStore((s) => s.getTreeChildren);
+  const children = useNavigationStore((s) => s.treeCache[key]?.children);
   const setTreeChildren = useNavigationStore((s) => s.setTreeChildren);
   const navigateTo = useNavigationStore((s) => s.navigateTo);
   const currentDriveId = useNavigationStore((s) => s.driveId);
   const currentFolderId = useNavigationStore((s) => s.folderId);
 
   const [loading, setLoading] = useState(false);
-  const children = getTreeChildren(key);
-  const selected =
-    currentDriveId === driveId && (currentFolderId ?? undefined) === folderId;
+  const [error, setError] = useState(false);
+  const selected = currentDriveId === driveId && (currentFolderId ?? undefined) === folderId;
 
   useEffect(() => {
     if (!expanded || children) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setError(false);
       try {
         const files = await fetchFolderChildren(driveId, folderId);
         if (cancelled) return;
@@ -88,7 +86,7 @@ function FolderTreeNode({
           .map((f) => ({ id: f.id, name: f.name }));
         setTreeChildren(key, folders);
       } catch {
-        if (!cancelled) setTreeChildren(key, []);
+        if (!cancelled) setError(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -141,7 +139,7 @@ function FolderTreeNode({
           )}
         </button>
         <button
-          ref={selectedRef}
+          ref={selected ? selectedRef : undefined}
           type="button"
           className="flex min-w-0 flex-1 items-center gap-1.5 truncate rounded px-1 py-1 text-left"
           onClick={() => {
@@ -168,6 +166,11 @@ function FolderTreeNode({
         </button>
       </div>
 
+      {expanded && error && (
+        <p role="alert" className="px-3 py-1 text-xs text-destructive">
+          Could not load folders. Collapse and expand to retry.
+        </p>
+      )}
       {expanded && children && (
         <div role="group" className="animate-in fade-in-0 slide-in-from-top-1 duration-150">
           {children.length === 0 ? (
@@ -186,6 +189,7 @@ function FolderTreeNode({
                 name={child.name}
                 depth={depth + 1}
                 path={[...path, { id: child.id, name: child.name }]}
+                selectedRef={selectedRef}
                 onNavigate={onNavigate}
               />
             ))
