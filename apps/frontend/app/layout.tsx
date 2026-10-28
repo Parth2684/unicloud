@@ -2,6 +2,7 @@ import { Toaster } from "react-hot-toast";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
+import { BackendAvailability } from "@/components/BackendAvailability";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -44,7 +45,7 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <ThemeProvider>
-          {children}
+          <BackendAvailability>{children}</BackendAvailability>
           <Toaster position="top-center" />
           <Toaster toasterId="job_progress" position="bottom-right" />
         </ThemeProvider>
