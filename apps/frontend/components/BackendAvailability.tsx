@@ -26,7 +26,7 @@ export function BackendAvailability({ children }: { children: React.ReactNode })
           cache: "no-store",
           signal: controller.signal,
         });
-        const healthy = response.ok && (await response.text()) === "Hello World";
+        const healthy = response.ok;
         if (!disposed) setAvailable(healthy);
       } catch {
         if (!disposed) setAvailable(false);
