@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight, Folder, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Folder, HardDrive, Loader2 } from "lucide-react";
 import { fetchFolderChildren } from "@/api/cloud";
 import { isFolder } from "@/utils/format";
 import { locationKey, rootPath, type PathSegment } from "@/stores/navigation/types";
@@ -12,9 +12,10 @@ import { cn } from "@/lib/utils";
 type FolderTreeProps = {
   driveId: string;
   driveName?: string;
+  onNavigate?: () => void;
 };
 
-export function FolderTree({ driveId, driveName = "My Drive" }: FolderTreeProps) {
+export function FolderTree({ driveId, driveName = "My Drive", onNavigate }: FolderTreeProps) {
   const router = useRouter();
   const currentFolderId = useNavigationStore((s) => s.folderId);
   const currentDriveId = useNavigationStore((s) => s.driveId);
@@ -31,9 +32,12 @@ export function FolderTree({ driveId, driveName = "My Drive" }: FolderTreeProps)
         folderId={undefined}
         name={driveName}
         depth={0}
-        path={rootPath(driveName)}
+        path={rootPath()}
         selectedRef={selectedRef}
-        onNavigate={(href) => router.push(href)}
+        onNavigate={(href) => {
+          router.push(href);
+          onNavigate?.();
+        }}
       />
     </div>
   );
@@ -68,6 +72,7 @@ function FolderTreeNode({
   const currentDriveId = useNavigationStore((s) => s.driveId);
   const currentFolderId = useNavigationStore((s) => s.folderId);
 
+  const [visibleCount, setVisibleCount] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const selected = currentDriveId === driveId && (currentFolderId ?? undefined) === folderId;
@@ -100,7 +105,7 @@ function FolderTreeNode({
   const navPathIds = useNavigationStore((s) => s.path.map((p) => p.id).join("/"));
   const nodePathIds = path.map((p) => p.id).join("/");
   useEffect(() => {
-    if (expanded) return;
+    if (useNavigationStore.getState().expanded[key]) return;
     if (currentDriveId !== driveId) return;
     const navIds = navPathIds ? navPathIds.split("/") : [];
     const nodeIds = nodePathIds ? nodePathIds.split("/") : [];
@@ -108,7 +113,7 @@ function FolderTreeNode({
     if (onPath && nodeIds.length < navIds.length) {
       setExpanded(key, true);
     }
-  }, [expanded, currentDriveId, driveId, key, navPathIds, nodePathIds, setExpanded]);
+  }, [currentDriveId, driveId, key, navPathIds, nodePathIds, setExpanded]);
 
   return (
     <div role="treeitem" aria-expanded={expanded} aria-selected={selected}>
@@ -142,11 +147,23 @@ function FolderTreeNode({
           ref={selected ? selectedRef : undefined}
           type="button"
           className="flex min-w-0 flex-1 items-center gap-1.5 truncate rounded px-1 py-1 text-left"
-          onClick={() => {
+          title={folderId === undefined ? "Click to expand or collapse; double-click to open drive" : name}
+          onClick={(event) => {
+            if (folderId === undefined) {
+              if (event.detail < 2) toggleExpanded(key);
+              return;
+            }
             const href = navigateTo({ driveId, folderId, path });
             onNavigate(href);
           }}
-          onDoubleClick={() => toggleExpanded(key)}
+          onDoubleClick={() => {
+            if (folderId === undefined) {
+              setExpanded(key, true);
+              onNavigate(navigateTo({ driveId, path: rootPath() }));
+            } else {
+              toggleExpanded(key);
+            }
+          }}
           onKeyDown={(e) => {
             if (e.key === "ArrowRight") {
               e.preventDefault();
@@ -161,7 +178,11 @@ function FolderTreeNode({
             }
           }}
         >
-          <Folder className="size-3.5 shrink-0 text-primary" />
+          {folderId === undefined ? (
+            <HardDrive className="size-3.5 shrink-0 text-primary" />
+          ) : (
+            <Folder className="size-3.5 shrink-0 text-primary" />
+          )}
           <span className="truncate">{name}</span>
         </button>
       </div>
@@ -181,7 +202,7 @@ function FolderTreeNode({
               Empty
             </p>
           ) : (
-            children.map((child) => (
+            children.slice(0, visibleCount).map((child) => (
               <FolderTreeNode
                 key={child.id}
                 driveId={driveId}
@@ -193,6 +214,17 @@ function FolderTreeNode({
                 onNavigate={onNavigate}
               />
             ))
+          )}
+          {children.length > visibleCount && (
+            <button
+              type="button"
+              className="rounded px-3 py-1 text-sm text-muted-foreground hover:bg-sidebar-accent/70"
+              style={{ marginLeft: `${(depth + 1) * 12 + 4}px` }}
+              aria-label={`Show up to 10 more folders in ${name}`}
+              onClick={() => setVisibleCount((count) => count + 10)}
+            >
+              ...
+            </button>
           )}
         </div>
       )}

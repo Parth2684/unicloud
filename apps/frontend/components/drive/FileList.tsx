@@ -163,20 +163,22 @@ function FileRow({ driveId, item, onOpenFolder }: FileRowProps) {
       </div>
 
       <div className="relative">
-        <Button
-          ref={buttonRef}
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Actions for ${item.name}`}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          onClick={handleMenuToggle}
-        >
-          <MoreVertical className="size-4" />
-        </Button>
+        {!folder && (
+          <Button
+            ref={buttonRef}
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Actions for ${item.name}`}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            onClick={handleMenuToggle}
+          >
+            <MoreVertical className="size-4" />
+          </Button>
+        )}
 
-        {open &&
+        {!folder && open &&
           createPortal(
             <div
               role="menu"

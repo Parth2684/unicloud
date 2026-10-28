@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Cloud,
   HardDrive,
@@ -28,17 +28,14 @@ type SidebarProps = {
 
 export function Sidebar({ mobile = false }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
+  const [visibleDriveCount, setVisibleDriveCount] = useState(10);
   const { successCloudAccounts, setClouds } = useCloudStore();
   const { userInfo, setUserInfo } = useUserStore();
   const logout = useAuthStore((s) => s.logout);
   const {
-    driveId,
     sidebarCollapsed,
     sidebarOpen,
     setSidebarOpen,
-    getLastLocation,
-    navigateTo,
   } = useNavigationStore();
 
   useEffect(() => {
@@ -47,7 +44,6 @@ export function Sidebar({ mobile = false }: SidebarProps) {
   }, [setClouds, setUserInfo, userInfo]);
 
   const collapsed = !mobile && sidebarCollapsed;
-  const showTree = !!driveId && pathname.startsWith("/drive/");
 
   const content = (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
@@ -113,42 +109,27 @@ export function Sidebar({ mobile = false }: SidebarProps) {
               Drives
             </h3>
             <ul className="space-y-1">
-              {(successCloudAccounts ?? []).map((acc) => {
-                const id = acc.info.id;
-                const active = driveId === id;
-                return (
-                  <li key={id}>
-                    <button
-                      type="button"
-                      className={cn(
-                        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
-                        active
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "hover:bg-sidebar-accent/70",
-                      )}
-                      onClick={() => {
-                        const last = getLastLocation(id);
-                        const href = navigateTo(
-                          last ?? {
-                            driveId: id,
-                            path: [{ id: "root", name: "My Drive" }],
-                          },
-                        );
-                        router.push(href);
-                        if (mobile) setSidebarOpen(false);
-                      }}
-                    >
-                      <HardDrive className="size-3.5 shrink-0 text-primary" />
-                      <span className="truncate">{acc.info.email}</span>
-                    </button>
-                    {active && showTree && (
-                      <div className="mt-1 ml-1 border-l border-sidebar-border pl-1">
-                        <FolderTree driveId={id} />
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
+              {(successCloudAccounts ?? []).slice(0, visibleDriveCount).map((acc) => (
+                <li key={acc.info.id}>
+                  <FolderTree
+                    driveId={acc.info.id}
+                    driveName={acc.info.email}
+                    onNavigate={() => mobile && setSidebarOpen(false)}
+                  />
+                </li>
+              ))}
+              {(successCloudAccounts?.length ?? 0) > visibleDriveCount && (
+                <li>
+                  <button
+                    type="button"
+                    className="rounded px-2 py-1 text-sm text-muted-foreground hover:bg-sidebar-accent/70"
+                    aria-label="Show up to 10 more drives"
+                    onClick={() => setVisibleDriveCount((count) => count + 10)}
+                  >
+                    ...
+                  </button>
+                </li>
+              )}
               {(!successCloudAccounts || successCloudAccounts.length === 0) && (
                 <li className="px-2 text-xs text-muted-foreground">No drives linked</li>
               )}
