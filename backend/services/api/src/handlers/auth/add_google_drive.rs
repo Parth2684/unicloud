@@ -35,7 +35,7 @@ pub async fn drive_auth_redirect() -> Redirect {
         Ok(uri) => Redirect::to(uri.as_str()),
         Err(err) => {
             eprintln!("Error Parsing uri {:?}", err);
-            Redirect::to(&format!("{}/auth/drive", &ENVS.backend_url))
+            Redirect::to(&format!("{}/auth/drive", ENVS.backend_url))
         }
     }
 }
@@ -153,10 +153,7 @@ pub async fn drive_auth_callback(
     };
 
     let image: Option<String> = match openid_res.get("picture") {
-        Some(link) => match link.as_str() {
-            Some(str) => Some(str.to_owned()),
-            None => None,
-        },
+        Some(link) => link.as_str().map(|s| s.to_owned()),
         None => None,
     };
 
@@ -233,7 +230,7 @@ pub async fn drive_auth_callback(
                     cloud.refresh_token = Set(Some(encrypted_refresh_token));
                     cloud.email = Set(owned_email);
                     cloud.expires_in = Set(Some(expires_in));
-                    cloud.is_primary = Set(&email == &final_user_account.gmail);
+                    cloud.is_primary = Set(email == final_user_account.gmail);
                     cloud.provider = Set(entities::sea_orm_active_enums::Provider::Google);
                     cloud.user_id = Set(claims.id);
                     cloud.image = Set(image);
@@ -255,7 +252,7 @@ pub async fn drive_auth_callback(
                         access_token: Set(encrypted_access_token),
                         refresh_token: Set(Some(encrypted_refresh_token)),
                         expires_in: Set(Some(expires_in)),
-                        is_primary: Set(&email == &final_user_account.gmail),
+                        is_primary: Set(email == final_user_account.gmail),
                         provider: Set(entities::sea_orm_active_enums::Provider::Google),
                         user_id: Set(claims.id),
                         sub: Set(Some(owned_sub)),
@@ -275,10 +272,7 @@ pub async fn drive_auth_callback(
                 }
             };
 
-            Ok(Redirect::to(&format!(
-                "{}/home",
-                &ENVS.frontend_url.to_string()
-            )))
+            Ok(Redirect::to(&format!("{}/home", ENVS.frontend_url)))
         }
         None => {
             let (cloud_account, user_account): (
@@ -319,7 +313,7 @@ pub async fn drive_auth_callback(
                     cloud.access_token = Set(encrypted_access_token);
                     cloud.email = Set(owned_email);
                     cloud.expires_in = Set(Some(expires_in));
-                    cloud.is_primary = Set(&email == &final_user_account.gmail);
+                    cloud.is_primary = Set(email == final_user_account.gmail);
                     cloud.provider = Set(entities::sea_orm_active_enums::Provider::Google);
                     cloud.user_id = Set(claims.id);
                     cloud.image = Set(image);
@@ -327,11 +321,8 @@ pub async fn drive_auth_callback(
                     cloud.token_expired = Set(false);
 
                     match cloud.update(db).await {
-                        Ok(_) => Ok(Redirect::to(&format!(
-                            "{}/home",
-                            &ENVS.frontend_url.to_string()
-                        ))),
-                        Err(err) => return Err(AppError::Internal(Some(err.to_string()))),
+                        Ok(_) => Ok(Redirect::to(&format!("{}/home", ENVS.frontend_url))),
+                        Err(err) => Err(AppError::Internal(Some(err.to_string()))),
                     }
                 }
                 None => {
@@ -344,7 +335,7 @@ pub async fn drive_auth_callback(
                         access_token: Set(encrypted_access_token),
                         refresh_token: Set(None),
                         expires_in: Set(Some(expires_in)),
-                        is_primary: Set(&email == &final_user_account.gmail),
+                        is_primary: Set(email == final_user_account.gmail),
                         provider: Set(entities::sea_orm_active_enums::Provider::Google),
                         user_id: Set(claims.id),
                         sub: Set(Some(owned_sub)),
@@ -353,15 +344,10 @@ pub async fn drive_auth_callback(
                         ..Default::default()
                     };
                     match insert_cloud.insert(db).await {
-                        Ok(_) => Ok(Redirect::to(&format!(
-                            "{}/home",
-                            &ENVS.frontend_url.to_string()
-                        ))),
-                        Err(_) => {
-                            return Err(AppError::Internal(Some(String::from(
-                                "Couldn't create cloud account",
-                            ))));
-                        }
+                        Ok(_) => Ok(Redirect::to(&format!("{}/home", ENVS.frontend_url))),
+                        Err(_) => Err(AppError::Internal(Some(String::from(
+                            "Couldn't create cloud account",
+                        )))),
                     }
                 }
             }

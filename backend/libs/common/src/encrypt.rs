@@ -16,8 +16,8 @@ pub enum DecryptError {
 }
 
 pub fn encrypt(plaintext: &str) -> Result<Vec<u8>, Error> {
-    let key: &Key<Aes256Gcm> = &ENVS.encryption_key.try_into().unwrap();
-    let mut cipher = Aes256Gcm::new(&key);
+    let key: &Key<Aes256Gcm> = &ENVS.encryption_key.into();
+    let mut cipher = Aes256Gcm::new(key);
     let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
     let cipher_text = match cipher.encrypt(&nonce, plaintext.as_ref()) {
         Ok(ciphertext) => ciphertext,
@@ -31,9 +31,9 @@ pub fn encrypt(plaintext: &str) -> Result<Vec<u8>, Error> {
     Ok(concat_nonce_cipher)
 }
 
-pub fn decrypt(data: &Vec<u8>) -> Result<String, DecryptError> {
-    let key: &Key<Aes256Gcm> = &ENVS.encryption_key.try_into().unwrap();
-    let mut cipher = Aes256Gcm::new(&key);
+pub fn decrypt(data: &[u8]) -> Result<String, DecryptError> {
+    let key: &Key<Aes256Gcm> = &ENVS.encryption_key.into();
+    let mut cipher = Aes256Gcm::new(key);
     let (nonce_bytes, ciphertext) = data.split_at(12);
     let nonce = aes_gcm::Nonce::from_slice(nonce_bytes);
     let plaintext_bytes = cipher.decrypt(nonce, ciphertext);

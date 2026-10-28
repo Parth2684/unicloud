@@ -24,7 +24,7 @@ pub fn create_jwt(id: &str) -> Result<String, jsonwebtoken::errors::Error> {
         exp: expiration,
     };
 
-    let encoding_key = EncodingKey::from_secret(&ENVS.jwt_secret.as_bytes());
+    let encoding_key = EncodingKey::from_secret(ENVS.jwt_secret.as_bytes());
     let token = encode(&Header::default(), &claims, &encoding_key);
     match token {
         Ok(token) => Ok(token),

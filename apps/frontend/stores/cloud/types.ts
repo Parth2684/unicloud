@@ -45,6 +45,9 @@ export interface ClipboardItem {
 
 export type CloudState = {
   loading: boolean;
+  folderLoading: boolean;
+  folderError: string | null;
+  folderLocation: string | null;
   successCloudAccounts: SuccessCloudAccount[] | null;
   errorCloudAccounts: ErrorCloudAccount[] | null;
   drive: DriveFile[] | null;
@@ -64,6 +67,6 @@ export type CloudActions = {
     to_drive: string,
     to_folder_id: string,
   ) => Promise<void>;
-  deleteDrive: (drive_id: string, isExpired: boolean) => Promise<void>;
+  deleteDrive: (drive_id: string, isExpired?: boolean) => Promise<void>;
   deleteFile: (drive_id: string, file_id: string) => Promise<void>;
 };

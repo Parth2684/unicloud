@@ -3,7 +3,7 @@ import { createSubscription } from "../handlers/createSubscription";
 
 
 
-const subscriptionRouter = Router();
+const subscriptionRouter: Router = Router();
 
 subscriptionRouter.post("/", createSubscription)
 

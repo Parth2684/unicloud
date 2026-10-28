@@ -78,9 +78,9 @@ pub async fn get_jobs(Extension(claims): Extension<Claims>) -> Result<Response, 
     match jobs {
         Err(err) => {
             eprintln!("error fetching jobs: {:?}", err);
-            return Err(AppError::Internal(Some(String::from(
+            Err(AppError::Internal(Some(String::from(
                 "Error fetching jobs",
-            ))));
+            ))))
         }
         Ok(jobs) => Ok((
             (StatusCode::OK),

@@ -36,19 +36,19 @@ pub async fn create_permission(
         Err(err) => {
             eprintln!("{err:?}");
             if err.status() == Some(StatusCode::FORBIDDEN) {
-                return Err(String::from(
+                Err(String::from(
                     "You might not have editor or owner role to the file",
-                ));
+                ))
             } else {
-                return Err(String::from(
+                Err(String::from(
                     "Error from google api giving permissions, please try again",
-                ));
+                ))
             }
         }
         Ok(res) => match res.json::<Permission>().await {
             Err(err) => {
                 eprintln!("{err:?}");
-                return Err(String::from("Error parsing response from google"));
+                Err(String::from("Error parsing response from google"))
             }
             Ok(r) => {
                 let job = JobEntity::find()
@@ -64,7 +64,7 @@ pub async fn create_permission(
                     edit_job.update(db).await.ok();
                     Ok(permission_id)
                 } else {
-                    return Err(String::from("error getting permission ids"));
+                    Err(String::from("error getting permission ids"))
                 }
             }
         },
@@ -96,7 +96,7 @@ pub async fn copy_file(
     match response {
         Err(err) => {
             eprintln!("{err:?}");
-            return Err(String::from("Error copying file, try again"));
+            Err(String::from("Error copying file, try again"))
         }
         Ok(_) => Ok(()),
     }

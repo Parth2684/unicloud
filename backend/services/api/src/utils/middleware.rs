@@ -26,6 +26,6 @@ pub async fn auth_middleware(
             let response = next.run(request).await;
             Ok(response)
         }
-        Err(err) => Err(AppError::Unauthorised(Some(err.to_string()))),
+        Err(err) => Err(AppError::Internal(Some(err.to_string()))),
     }
 }

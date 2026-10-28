@@ -2,11 +2,12 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev -p 4000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint ./ --max-warnings 0",
     "fmt": "prettier --write ."
   },
   "dependencies": {
@@ -21,7 +22,8 @@
     "react-dom": "19.2.0",
     "react-hot-toast": "^2.6.0",
     "tailwind-merge": "^3.4.0",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.8",
+    "@repo/eslint-config": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

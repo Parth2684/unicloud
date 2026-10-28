@@ -7,9 +7,9 @@ export default function PrivacyPolicyPage() {
   return (
     <main className="max-w-4xl mx-auto px-6 py-16">
       <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
-      <p className="text-sm text-gray-500 mb-10">Effective Date: 11th February, 2026</p>
+      <p className="text-sm text-muted-foreground mb-10">Effective Date: 11th February, 2026</p>
 
-      <section className="space-y-6 text-gray-800 leading-relaxed">
+      <section className="space-y-6 text-foreground leading-relaxed">
         <h2 className="text-2xl font-semibold">1. Introduction</h2>
         <p>
           UniCloud provides a cloud aggregation platform that allows users to connect multiple cloud

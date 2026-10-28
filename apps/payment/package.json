@@ -6,9 +6,14 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "build": "bun build src/index.ts --outfile dist/server.js --target bun --minify",
-    "start": "bun dist/server.js"
+    "start": "bun dist/server.js",
+    "check-types": "next typegen && tsc --noEmit",
+    "lint": "eslint --max-warnings 0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
     "@types/bun": "latest",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10"

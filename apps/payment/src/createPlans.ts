@@ -48,7 +48,7 @@ async function create() {
     }
   });
 
-  let plans = [];
+  const plans = [];
   plans.push(bronze, silver, gold, platinum)
 
   try {

@@ -37,7 +37,7 @@ pub struct Model {
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    pub cloud_account_2: HasOne<super::cloud_account::Entity>,
+    pub cloud_account_2: BelongsTo<Option<super::cloud_account::Entity>>,
     #[sea_orm(
         belongs_to,
         relation_enum = "CloudAccount1",
@@ -46,7 +46,7 @@ pub struct Model {
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    pub cloud_account_1: HasOne<super::cloud_account::Entity>,
+    pub cloud_account_1: BelongsTo<super::cloud_account::Entity>,
     #[sea_orm(
         belongs_to,
         from = "user_id",
@@ -54,7 +54,7 @@ pub struct Model {
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    pub users: HasOne<super::users::Entity>,
+    pub users: BelongsTo<super::users::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

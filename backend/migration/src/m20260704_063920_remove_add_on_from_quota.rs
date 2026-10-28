@@ -144,6 +144,7 @@ enum Subscription {
     CurrentPeriodEnd,
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(DeriveIden)]
 enum Payment {
     Table,

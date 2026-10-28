@@ -1,25 +1,27 @@
 "use client";
+
 import { useEffect } from "react";
-import { useCloudStore } from "../stores/cloud/useCloudStore";
-import { Spinner } from "./ui/spinner";
 import Link from "next/link";
-import { BACKEND_URL } from "../lib/export";
-import { Provider, SuccessCloudAccount, ErrorCloudAccount } from "../stores/cloud/types";
-import { formatBytes, getUsagePercentage } from "../utils/format";
 import { Trash2 } from "lucide-react";
+import { useCloudStore } from "@/stores/cloud/useCloudStore";
+import { Spinner } from "@/components/ui/spinner";
+import { BACKEND_URL } from "@/lib/export";
+import type { ErrorCloudAccount, SuccessCloudAccount } from "@/stores/cloud/types";
+import { formatBytes, getUsagePercentage } from "@/utils/format";
+import { Button } from "@/components/ui/button";
 
 export const HomeComponent = () => {
   const { setClouds, successCloudAccounts, errorCloudAccounts, loading } = useCloudStore();
+
   useEffect(() => {
     setClouds();
-  }, []);
+  }, [setClouds]);
+
   return (
-    <div className="flex w-full flex-col gap-8 px-4 py-6 sm:px-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-6 sm:px-6">
       <header className="flex flex-col gap-2">
-        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 sm:text-2xl">
-          Cloud accounts
-        </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Cloud accounts</h1>
+        <p className="text-sm text-muted-foreground">
           Choose a linked cloud account to open its drive. Storage usage and provider are shown
           below.
         </p>
@@ -32,7 +34,7 @@ export const HomeComponent = () => {
       ) : (
         <>
           <section className="flex flex-col gap-4">
-            <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Linked accounts
             </h2>
             {Array.isArray(successCloudAccounts) && successCloudAccounts.length > 0 ? (
@@ -42,15 +44,16 @@ export const HomeComponent = () => {
                 ))}
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-6 text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900/40 dark:text-zinc-400">
-                No cloud accounts are linked yet.
+              <div className="rounded-lg border border-dashed border-border bg-muted/40 p-6 text-sm text-muted-foreground">
+                No cloud accounts are linked yet. Use Add Drive in the sidebar to connect Google
+                Drive.
               </div>
             )}
           </section>
 
           {Array.isArray(errorCloudAccounts) && errorCloudAccounts.length > 0 && (
             <section className="flex flex-col gap-3">
-              <h2 className="text-sm font-medium uppercase tracking-wide text-amber-600 dark:text-amber-400">
+              <h2 className="text-xs font-semibold tracking-wide text-warning uppercase">
                 Attention needed
               </h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -66,108 +69,100 @@ export const HomeComponent = () => {
   );
 };
 
-type CloudAccountCardProps = {
-  account: SuccessCloudAccount;
-};
-
-const CloudAccountCard = ({ account }: CloudAccountCardProps) => {
+function CloudAccountCard({ account }: { account: SuccessCloudAccount }) {
   const { info, storageQuota } = account;
   const usage = formatBytes(storageQuota.usage);
   const limitLabel = storageQuota.limit ? formatBytes(storageQuota.limit) : null;
-  const percentage = getUsagePercentage(
-    storageQuota.usage, // ✅ raw number
-    storageQuota.limit!, // ✅ raw number
-  );
-  const { deleteDrive } = useCloudStore();
-  const providerLabel = info.provider;
-  const avatarInitial = info.image;
+  const percentage = getUsagePercentage(storageQuota.usage, storageQuota.limit ?? null);
+  const deleteDrive = useCloudStore((s) => s.deleteDrive);
 
   return (
     <Link
       href={`/google/${info.id}`}
-      className="relative group flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+      className="group relative flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 text-left shadow-soft transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
     >
-      <button
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="absolute top-3 right-3 z-10 text-muted-foreground hover:text-destructive"
+        aria-label="Delete cloud account"
         onClick={async (e) => {
           e.preventDefault();
           e.stopPropagation();
-          await deleteDrive(info.id, false);
+          await deleteDrive(info.id);
         }}
-        className="absolute right-3 top-3 z-10 rounded-md p-1.5 text-zinc-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
-        aria-label="Delete cloud account"
       >
-        <Trash2 className="h-4 w-4" />
-      </button>
+        <Trash2 className="size-4" />
+      </Button>
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-100">
-          {avatarInitial ? (
-            <img className="truncate rounded-full" src={avatarInitial}></img>
+        <div className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-muted text-sm font-semibold">
+          {info.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="size-full object-cover" src={info.image} alt="" />
           ) : (
-            <span className="truncate rounded-full">{info.email[0].toUpperCase()}</span>
+            <span>{info.email[0].toUpperCase()}</span>
           )}
         </div>
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
-            {info.email}
-          </span>
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">{providerLabel}</span>
+          <span className="truncate text-sm font-medium text-foreground">{info.email}</span>
+          <span className="text-xs text-muted-foreground">{info.provider}</span>
         </div>
       </div>
 
       <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
             {usage}
             {limitLabel && ` of ${limitLabel}`}
           </span>
           <span>{Math.round(percentage)}%</span>
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+        <div className="h-1.5 overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full rounded-full bg-sky-500 transition-all group-hover:bg-sky-400"
+            className="h-full rounded-full bg-primary transition-all"
             style={{ width: `${Math.min(percentage, 100)}%` }}
           />
         </div>
       </div>
     </Link>
   );
-};
+}
 
-type ErrorAccountCardProps = {
-  account: ErrorCloudAccount;
-};
+function ErrorAccountCard({ account }: { account: ErrorCloudAccount }) {
+  const deleteDrive = useCloudStore((s) => s.deleteDrive);
 
-const ErrorAccountCard = ({ account }: ErrorAccountCardProps) => {
-  const providerLabel = account.provider;
-  const { deleteDrive } = useCloudStore();
   return (
-    <Link
+    <a
       href={`${BACKEND_URL}/auth/drive`}
-      className="relative flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left text-amber-900 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-50"
+      className="relative flex flex-col gap-3 rounded-lg border border-warning/40 bg-warning/10 p-4 text-left shadow-soft transition hover:-translate-y-0.5"
     >
-      <button
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="absolute top-3 right-3 z-10 text-muted-foreground hover:text-destructive"
+        aria-label="Delete cloud account"
         onClick={async (e) => {
           e.preventDefault();
           e.stopPropagation();
-          await deleteDrive(account.id, true);
+          await deleteDrive(account.id);
         }}
-        className="absolute right-3 top-3 z-10 rounded-md p-1.5 text-zinc-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
-        aria-label="Delete cloud account"
       >
-        <Trash2 className="h-4 w-4" />
-      </button>
+        <Trash2 className="size-4" />
+      </Button>
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-medium">{account.email}</span>
-          <span className="text-xs opacity-80">{providerLabel}</span>
+          <span className="truncate text-sm font-medium text-foreground">{account.email}</span>
+          <span className="text-xs text-muted-foreground">{account.provider}</span>
         </div>
         {account.tokenExpired && (
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/60 dark:text-amber-100">
+          <span className="rounded-md bg-warning/20 px-2 py-0.5 text-xs font-medium text-foreground">
             Session expired
           </span>
         )}
       </div>
-      <p className="text-xs opacity-80">Tap to reconnect this account.</p>
-    </Link>
+      <p className="text-xs text-muted-foreground">Tap to reconnect this account.</p>
+    </a>
   );
-};
+}

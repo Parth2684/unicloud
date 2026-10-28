@@ -46,7 +46,6 @@ pub struct FileDetail {
     size: Option<String>,
 }
 
-
 #[derive(Serialize)]
 pub struct CopyResponse {
     created_at: NaiveDateTime,
@@ -67,7 +66,7 @@ pub struct CopyResponse {
     status: Status,
     time: Option<i64>,
     transfer_type: TransferType,
-    progress: i8
+    progress: i8,
 }
 
 pub async fn copy_file_or_folder(
@@ -82,21 +81,21 @@ pub async fn copy_file_or_folder(
     match (from_uuid, to_uuid) {
         (Err(err1), Err(err2)) => {
             eprintln!("err1: {:?}, err2: {:?}", err1, err2);
-            return Err(AppError::Internal(Some(String::from(
+            Err(AppError::Internal(Some(String::from(
                 "Couldn't parse Ids of any drive",
-            ))));
+            ))))
         }
         (Err(err), Ok(_)) => {
             eprintln!("err parsing from drive id: {:?}", err);
-            return Err(AppError::Internal(Some(String::from(
+            Err(AppError::Internal(Some(String::from(
                 "Couldn't parse Id of from drive",
-            ))));
+            ))))
         }
         (Ok(_), Err(err)) => {
             eprintln!("error parsing to drive id {:?}", err);
-            return Err(AppError::Internal(Some(String::from(
+            Err(AppError::Internal(Some(String::from(
                 "Couldn't parse Id of to drive",
-            ))));
+            ))))
         }
         (Ok(from_id), Ok(to_id)) => {
             let (from_acc, to_acc, jobs) = tokio::join!(
@@ -123,81 +122,77 @@ pub async fn copy_file_or_folder(
                         "error fetching accounts: {:?}, {:?}, {:?}",
                         err1, err2, err3
                     );
-                    return Err(AppError::Internal(Some(String::from(
+                    Err(AppError::Internal(Some(String::from(
                         "Error fetching both the transfer accounts",
-                    ))));
+                    ))))
                 }
                 (Err(err), Ok(_), Ok(_)) => {
                     eprintln!("error fetching source account: {err:?}");
-                    return Err(AppError::Internal(Some(String::from(
+                    Err(AppError::Internal(Some(String::from(
                         "Error fetching source account",
-                    ))));
+                    ))))
                 }
                 (Ok(_), Err(err), Err(err2)) => {
                     eprintln!("error fetching destination account: {err:?}, {err2:?}");
-                    return Err(AppError::Internal(Some(String::from(
+                    Err(AppError::Internal(Some(String::from(
                         "Error fetching destination account",
-                    ))));
+                    ))))
                 }
                 (Err(err1), Ok(_), Err(err)) => {
                     eprintln!("error fetching Jobs: {err:?} and source account: {err1}");
-                    return Err(AppError::Internal(Some(String::from(
+                    Err(AppError::Internal(Some(String::from(
                         "Error fetching jobs and source accounts",
-                    ))));
+                    ))))
                 }
                 (Ok(_), Err(err), Ok(_)) => {
                     eprintln!("error fetching destination account: {err:?}");
-                    return Err(AppError::Internal(Some(String::from(
+                    Err(AppError::Internal(Some(String::from(
                         "Error fetching destination account",
-                    ))));
+                    ))))
                 }
                 (Err(err1), Err(err2), Ok(_)) => {
                     eprintln!("error fetching accounts{err1}, {err2}");
-                    return Err(AppError::Internal(Some(String::from(
+                    Err(AppError::Internal(Some(String::from(
                         "Error fetching accounts",
-                    ))));
+                    ))))
                 }
                 (Ok(_), Ok(_), Err(err)) => {
                     eprintln!("error fetching Jobs: {err:?}");
-                    return Err(AppError::Internal(Some(String::from(
+                    Err(AppError::Internal(Some(String::from(
                         "Error fetching jobs",
-                    ))));
+                    ))))
                 }
                 (Ok(some_from_acc), Ok(some_to_acc), Ok(all_jobs)) => {
                     match (some_from_acc, some_to_acc) {
                         (None, None) => {
                             eprintln!("Neither accounts found under the user id ");
-                            return Err(AppError::NotFound(Some(String::from(
+                            Err(AppError::NotFound(Some(String::from(
                                 "Both accounts were not found under your access",
-                            ))));
+                            ))))
                         }
                         (None, Some(_)) => {
                             eprintln!("Source account not found in db");
-                            return Err(AppError::NotFound(Some(String::from(
+                            Err(AppError::NotFound(Some(String::from(
                                 "Source account not found under your access",
-                            ))));
+                            ))))
                         }
                         (Some(_), None) => {
                             eprintln!("Destination account not found in db");
-                            return Err(AppError::NotFound(Some(String::from(
+                            Err(AppError::NotFound(Some(String::from(
                                 "Destination account not found under your access",
-                            ))));
+                            ))))
                         }
                         (Some(source_acc), Some(destination_acc)) => {
-                            if source_acc.token_expired == true {
-                                return Err(AppError::UnprocessableEntry(Some(String::from(
-                                    format!(
-                                        "Your Source account {:?} needs to be refreshed to perform this action",
-                                        source_acc.email
-                                    ),
+                            if source_acc.token_expired {
+                                return Err(AppError::UnprocessableEntry(Some(format!(
+                                    "Your Source account {:?} needs to be refreshed to perform this action",
+                                    source_acc.email
                                 ))));
                             }
-                            if destination_acc.token_expired == true {
-                                return Err(AppError::UnprocessableEntry(Some(String::from(
-                                    format!(
-                                        "Your destination account {:?} needs to be refreshed to perfrom this action",
-                                        destination_acc.email
-                                    ),
+                            if destination_acc.token_expired {
+                                return Err(AppError::UnprocessableEntry(Some(format!(
+                                    "Your destination account {:?} needs to be refreshed to perfrom this action",
+                                    destination_acc.email
                                 ))));
                             }
                             if all_jobs.iter().any(|j| j.status == Status::Pending) {
@@ -212,9 +207,9 @@ pub async fn copy_file_or_folder(
                                     let mut source_active: CloudAccountActive = source_acc.into();
                                     source_active.token_expired = Set(true);
                                     source_active.update(db).await.ok();
-                                    return Err(AppError::Internal(Some(String::from(
+                                    Err(AppError::Internal(Some(String::from(
                                         "Error decrypting access token please refresh your account",
-                                    ))));
+                                    ))))
                                 }
                                 Ok(token) => {
                                     let client = Client::new();
@@ -233,9 +228,9 @@ pub async fn copy_file_or_folder(
                                                 "error receiving response from derive api: {:?}",
                                                 err
                                             );
-                                            return Err(AppError::BadGateway(Some(String::from(
+                                            Err(AppError::BadGateway(Some(String::from(
                                                 "Error receiving details of files from google",
-                                            ))));
+                                            ))))
                                         }
                                         Ok(response) => match response.json::<FileDetail>().await {
                                             Err(err) => {
@@ -243,17 +238,13 @@ pub async fn copy_file_or_folder(
                                                     "error parsing response from google: {:?}",
                                                     err
                                                 );
-                                                return Err(AppError::BadGateway(Some(
-                                                    String::from(
-                                                        "Error Parsing response from google",
-                                                    ),
-                                                )));
+                                                Err(AppError::BadGateway(Some(String::from(
+                                                    "Error Parsing response from google",
+                                                ))))
                                             }
                                             Ok(details) => {
                                                 let is_folder = details.mime_type
-                                                    == String::from(
-                                                        "application/vnd.google-apps.folder",
-                                                    );
+                                                    == "application/vnd.google-apps.folder";
                                                 let size_i64: Option<i64> = details
                                                     .size
                                                     .as_deref()
@@ -290,13 +281,13 @@ pub async fn copy_file_or_folder(
                                                 match insert_job {
                                                     Err(err) => {
                                                         eprintln!("error creating task: {err:?}");
-                                                        return Err(AppError::Internal(Some(
-                                                            String::from("Error creating task"),
-                                                        )));
+                                                        Err(AppError::Internal(Some(String::from(
+                                                            "Error creating task",
+                                                        ))))
                                                     }
                                                     Ok(job) => {
                                                         match redis_conn
-                                                            .lpush("copy:job", &job.id.to_string())
+                                                            .lpush("copy:job", job.id.to_string())
                                                             .await
                                                         {
                                                             Err(err) => {
@@ -308,12 +299,12 @@ pub async fn copy_file_or_folder(
                                                                 edit_job.status =
                                                                     Set(Status::Failed);
                                                                 edit_job.update(db).await.ok();
-                                                                return Err(AppError::Internal(Some(
+                                                                Err(AppError::Internal(Some(
                                                                 "Error pushing to job queue".into(),
-                                                            )));
+                                                                )))
                                                             }
                                                             Ok(_) => {
-                                                                return Ok((
+                                                                Ok((
                                                                     StatusCode::OK,
                                                                     axum::Json(json!({
                                                                         "message": "Task added successfully",
@@ -340,16 +331,16 @@ pub async fn copy_file_or_folder(
                                                                         }
                                                                     })),
                                                                 )
-                                                                    .into_response());
+                                                                    .into_response())
                                                             }
-                                                        };
+                                                        }
                                                     }
                                                 }
                                             }
                                         },
                                     }
                                 }
-                            };
+                            }
                         }
                     }
                 }

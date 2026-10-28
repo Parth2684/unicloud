@@ -1,4 +1,4 @@
-use sea_orm_migration::{prelude::*};
+use sea_orm_migration::prelude::*;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -6,7 +6,6 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-
         manager
             .create_table(
                 Table::create()
@@ -15,8 +14,17 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Plans::Id).string().primary_key())
                     .col(ColumnDef::new(Plans::Name).string().not_null().unique_key())
                     .col(ColumnDef::new(Plans::Description).string().not_null())
-                    .col(ColumnDef::new(Plans::Amount).big_integer().not_null().check(Expr::col(Plans::Amount).gt(0)))
-                    .col(ColumnDef::new(Plans::CreatedAt).timestamp_with_time_zone().not_null())
+                    .col(
+                        ColumnDef::new(Plans::Amount)
+                            .big_integer()
+                            .not_null()
+                            .check(Expr::col(Plans::Amount).gt(0)),
+                    )
+                    .col(
+                        ColumnDef::new(Plans::CreatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(Plans::Interval).integer().not_null())
                     .col(ColumnDef::new(Plans::Period).string().not_null())
                     .col(ColumnDef::new(Plans::Currency).char_len(3).not_null())
@@ -28,35 +36,34 @@ impl MigrationTrait for Migration {
                 Table::alter()
                     .table(Subscription::Table)
                     .add_column_if_not_exists(ColumnDef::new(Subscription::PlanId).string())
-                    .add_foreign_key(TableForeignKey::new()
-                        .name("fk-subscription-plan-id")
-                        .from_tbl(Subscription::Table)
-                        .from_col( Subscription::PlanId)
-                        .to_tbl(Plans::Table)
-                        .to_col(Plans::Id)
+                    .add_foreign_key(
+                        TableForeignKey::new()
+                            .name("fk-subscription-plan-id")
+                            .from_tbl(Subscription::Table)
+                            .from_col(Subscription::PlanId)
+                            .to_tbl(Plans::Table)
+                            .to_col(Plans::Id),
                     )
-                    .to_owned()
+                    .to_owned(),
             )
             .await
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-
         manager
             .drop_table(Table::drop().table(Plans::Table).to_owned())
             .await?;
         manager
-            .alter_table(Table::alter()
-                .table(Subscription::Table)
-                .drop_column_if_exists(Subscription::PlanId)
-                .drop_foreign_key("fk-subscription-plan-id")
-                .to_owned()
-            ).await
-        
+            .alter_table(
+                Table::alter()
+                    .table(Subscription::Table)
+                    .drop_column_if_exists(Subscription::PlanId)
+                    .drop_foreign_key("fk-subscription-plan-id")
+                    .to_owned(),
+            )
+            .await
     }
 }
-
-
 
 #[derive(DeriveIden)]
 enum Plans {
@@ -68,12 +75,11 @@ enum Plans {
     Period,
     Amount,
     Currency,
-    CreatedAt
+    CreatedAt,
 }
-
 
 #[derive(DeriveIden)]
 enum Subscription {
     Table,
-    PlanId
+    PlanId,
 }

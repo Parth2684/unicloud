@@ -8,3 +8,17 @@ export const axiosInstance = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      typeof window !== "undefined" &&
+      error?.response?.status === 401 &&
+      window.location.pathname !== "/"
+    ) {
+      window.location.href = "/";
+    }
+    return Promise.reject(error);
+  },
+);

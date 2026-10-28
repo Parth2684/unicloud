@@ -1,58 +1,47 @@
 import { create } from "zustand";
 import { Job, Status, UserAction, UserState } from "./types";
-import { axiosInstance } from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 import toast from "react-hot-toast";
+import { editJobStatus, fetchJobs, fetchUserInfo } from "@/api/user";
 
-export const useUserStore = create<UserState & UserAction>((set, get) => ({
+export const useUserStore = create<UserState & UserAction>((set) => ({
   userInfo: null,
   jobs: [],
 
   setUserInfo: async () => {
     try {
-      const res = await axiosInstance.get("/user/get-user-info");
-      set({ userInfo: res.data.user_info });
+      const userInfo = await fetchUserInfo();
+      set({ userInfo });
     } catch (error) {
-      console.error(error);
       if (error instanceof AxiosError && error.response?.data) {
         toast.error(error.response.data.message);
       }
     }
   },
+
   setJobs: async () => {
     try {
-      const res = await axiosInstance.get("/user/get-jobs");
-      let { jobs } = res.data
+      const jobs = await fetchJobs();
       jobs.forEach((job: Job) => {
-        if (job.status == Status.Complete) {
-          job.progress = 100
-        }
-        if (job.status == Status.Pending) {
-          job.progress = 0
-        }
-        if (job.status == Status.Failed) {
-          job.progress = 0
-        }
-      })
+        if (job.status === Status.Complete) job.progress = 100;
+        if (job.status === Status.Pending) job.progress = 0;
+        if (job.status === Status.Failed) job.progress = 0;
+      });
       set({ jobs });
     } catch (error) {
-      console.error(error);
       if (error instanceof AxiosError && error.response?.data) {
         toast.error(error.response.data.message);
       }
     }
   },
-  editJob: async (job_id: string, status: Status) => {
+
+  editJob: async (job_id, status) => {
     try {
-      const res = await axiosInstance.post("/user/edit-job", {
-        id: job_id,
-        status: status.charAt(0).toUpperCase() + status.slice(1),
-      });
+      const job = await editJobStatus(job_id, status);
       set((state) => ({
-        jobs: state.jobs?.map((job) => (job.id == job_id ? res.data.job : job)),
+        jobs: state.jobs?.map((j) => (j.id === job_id ? job : j)),
       }));
     } catch (error) {
-      console.error(error);
       if (error instanceof AxiosError && error.response?.data) {
         toast.error(error.response.data.message);
       }

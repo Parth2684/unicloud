@@ -85,14 +85,15 @@ model seaql_migrations {
 }
 
 model subscription {
-  razorpay_subscription_id String    @id
-  current_period_start     DateTime  @default(dbgenerated("((CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text))::date")) @db.Date
-  current_period_end       DateTime  @db.Date
-  user_id                  String    @db.Uuid
-  plan_id                  String?   @db.VarChar
+  razorpay_subscription_id String     @id
+  current_period_start     DateTime   @default(dbgenerated("((CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text))::date")) @db.Date
+  current_period_end       DateTime   @db.Date
+  user_id                  String     @db.Uuid
+  plan_id                  String?    @db.VarChar
+  subscription             sub_status @default(pending)
   payment                  payment[]
-  plans                    plans?    @relation(fields: [plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-subscription-plan-id")
-  users                    users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-subscription-user-id")
+  plans                    plans?     @relation(fields: [plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-subscription-plan-id")
+  users                    users      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk-subscription-user-id")
 }
 
 model users {
@@ -127,7 +128,7 @@ enum link_type {
 }
 
 enum payment_status {
-  error
+  failed
   pending
   authorized
   cancelled
@@ -158,4 +159,11 @@ enum status {
 enum transfer_type {
   google_to_google
   mega_to_google
+}
+
+enum sub_status {
+  active
+  cancelled
+  expired
+  pending
 }
