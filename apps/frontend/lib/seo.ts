@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
-const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL;
+const configuredUrl = process.env.SITE_URL;
 export const siteUrl = configuredUrl ? new URL(new URL(configuredUrl).origin) : undefined;
-export const siteTitle = "UniCloud – All your clouds in one place";
+export const siteTitle = "UniCloud – Manage Your Google Drive Accounts in One Place";
 export const siteDescription =
-  "Connect your cloud storage accounts with UniCloud. Search across your connected clouds and transfer files between providers in one place.";
+  "Bring your Google Drive accounts together with UniCloud. Browse files and folders, manage connected drives, and track storage usage in one organized workspace.";
 
 export function publicPageMetadata(title: string, description: string, path: string): Metadata {
   return {

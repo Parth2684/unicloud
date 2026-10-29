@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CloudOff, LoaderCircle, RefreshCw } from "lucide-react";
+import { CloudOff, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BACKEND_URL } from "@/lib/export";
 
@@ -55,26 +55,21 @@ export function BackendAvailability({ children }: { children: React.ReactNode })
     };
   }, [attempt]);
 
-  if (available) return children;
+  if (available !== false) return children;
 
   return (
     <main className="flex min-h-svh items-center justify-center bg-background px-6 py-16">
       <div className="w-full max-w-md text-center" role="status" aria-live="polite">
         <div className="mx-auto mb-8 flex size-20 items-center justify-center rounded-2xl border border-border bg-surface shadow-soft">
-          {available === null ? (
-            <LoaderCircle className="size-9 animate-spin text-primary" aria-hidden="true" />
-          ) : (
-            <CloudOff className="size-9 text-primary" aria-hidden="true" />
-          )}
+          <CloudOff className="size-9 text-primary" aria-hidden="true" />
         </div>
         <p className="mb-3 text-sm font-medium tracking-wide text-primary">UniCloud</p>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-          {available === null ? "Connecting to UniCloud" : "We’ll be back soon"}
+          We’ll be back soon
         </h1>
         <p className="mt-4 text-sm leading-6 text-muted-foreground">
-          {available === null
-            ? "Checking server availability. This will only take a moment."
-            : "Our server is temporarily unavailable. Please try again shortly. We’ll reconnect automatically when it’s back online."}
+          Our server is temporarily unavailable. Please try again shortly. We’ll reconnect
+          automatically when it’s back online.
         </p>
         {available === false && (
           <div className="mt-8">

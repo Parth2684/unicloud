@@ -37,8 +37,8 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## SEO configuration
 
-Set `NEXT_PUBLIC_SITE_URL` to the canonical production origin (for example, `https://your-domain.com`) before building. Rebuild after changing it. This enables canonical URLs, social image URLs, and the public-page sitemap at `/sitemap.xml`. Without it, domain-specific tags and sitemap entries are omitted to avoid advertising an incorrect hostname.
+Set `SITE_URL` to the canonical production origin (for example, `https://your-domain.com`) before building. Rebuild after changing it. This enables canonical URLs, social image URLs, and the public-page sitemap at `/sitemap.xml`. Without it, domain-specific tags and sitemap entries are omitted to avoid advertising an incorrect hostname.
 
 Public pages have individual metadata. Authenticated cloud routes are marked `noindex` and excluded from the sitemap. `/robots.txt` discourages crawling those routes; authentication remains responsible for access control.
 
-The existing backend availability screen is preserved. It gates page content until the client health check succeeds, limiting initial HTML available to crawlers.
+Backend availability is checked in the background without blocking page content. A failed response, network error, or eight-second timeout displays the maintenance page. Checks repeat every 30 seconds, with manual retry and automatic recovery when the server responds successfully.

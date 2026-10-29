@@ -8,7 +8,7 @@
       "outputs": []
     },
     "build": {
-      "env": ["NEXT_PUBLIC_SITE_URL"],
+      "env": ["SITE_URL"],
       "dependsOn": ["^build", "^db:generate"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
