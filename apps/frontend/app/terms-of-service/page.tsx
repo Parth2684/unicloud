@@ -1,7 +1,10 @@
-export const metadata = {
-  title: "Terms of Service | UniCloud",
-  description: "Terms of Service for UniCloud",
-};
+import { publicPageMetadata } from "@/lib/seo";
+
+export const metadata = publicPageMetadata(
+  "Terms of Service | UniCloud",
+  "Read the terms for using UniCloud, including cloud storage connections, file transfers, and user responsibilities.",
+  "/terms-of-service",
+);
 
 export default function TermsOfServicePage() {
   return (
@@ -45,8 +48,8 @@ export default function TermsOfServicePage() {
 
         <h2 className="text-2xl font-semibold">6. Disclaimer</h2>
         <p>
-          The service is provided &quot;as is&quot; without warranties of any kind. We are not liable for data
-          loss, service interruptions, or third-party failures.
+          The service is provided &quot;as is&quot; without warranties of any kind. We are not
+          liable for data loss, service interruptions, or third-party failures.
         </p>
 
         <h2 className="text-2xl font-semibold">7. Termination</h2>

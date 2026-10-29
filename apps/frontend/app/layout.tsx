@@ -1,9 +1,19 @@
+import type { Metadata } from "next";
+import { siteDescription, siteTitle, siteUrl } from "@/lib/seo";
 import { Toaster } from "react-hot-toast";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { BackendAvailability } from "@/components/BackendAvailability";
 import "./globals.css";
+
+export const metadata: Metadata = {
+  ...(siteUrl ? { metadataBase: siteUrl } : {}),
+  title: siteTitle,
+  description: siteDescription,
+  applicationName: "UniCloud",
+  robots: { index: true, follow: true },
+};
 
 const geistSans = Geist({
   subsets: ["latin"],

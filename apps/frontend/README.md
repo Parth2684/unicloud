@@ -34,3 +34,11 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## SEO configuration
+
+Set `NEXT_PUBLIC_SITE_URL` to the canonical production origin (for example, `https://your-domain.com`) before building. Rebuild after changing it. This enables canonical URLs, social image URLs, and the public-page sitemap at `/sitemap.xml`. Without it, domain-specific tags and sitemap entries are omitted to avoid advertising an incorrect hostname.
+
+Public pages have individual metadata. Authenticated cloud routes are marked `noindex` and excluded from the sitemap. `/robots.txt` discourages crawling those routes; authentication remains responsible for access control.
+
+The existing backend availability screen is preserved. It gates page content until the client health check succeeds, limiting initial HTML available to crawlers.

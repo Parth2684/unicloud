@@ -1,7 +1,10 @@
-export const metadata = {
-  title: "Privacy Policy | UniCloud",
-  description: "Privacy Policy for UniCloud",
-};
+import { publicPageMetadata } from "@/lib/seo";
+
+export const metadata = publicPageMetadata(
+  "Privacy Policy | UniCloud",
+  "Learn how UniCloud collects, uses, and protects your information when you connect cloud storage accounts.",
+  "/privacy-policy",
+);
 
 export default function PrivacyPolicyPage() {
   return (
