@@ -1,6 +1,6 @@
 import express, { type Request, type Response } from "express"
 import { authMiddleware } from "./middleware/auth"
-import subscriptionRouter from "./routers/subscription"
+import subscriptionRouter from "./routers/payment"
 
 const port = process.env.PORT ?? 3003
 const app = express()

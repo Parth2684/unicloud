@@ -60,18 +60,6 @@ pub enum Status {
     Failed,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
-#[sea_orm(rs_type = "Enum", db_type = "Enum", enum_name = "sub_status")]
-pub enum SubStatus {
-    #[sea_orm(string_value = "active")]
-    Active,
-    #[sea_orm(string_value = "cancelled")]
-    Cancelled,
-    #[sea_orm(string_value = "expired")]
-    Expired,
-    #[sea_orm(string_value = "pending")]
-    Pending,
-}
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "Enum", db_type = "Enum", enum_name = "transfer_type")]
 pub enum TransferType {
     #[sea_orm(string_value = "google_to_google")]
