@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
+  FolderPlus,
   HardDrive,
   Menu,
   PanelLeftClose,
@@ -20,6 +21,7 @@ import { DriveBreadcrumbs } from "@/components/layout/Breadcrumbs";
 import { useNavigationStore } from "@/stores/navigation/useNavigationStore";
 import { useCloudStore } from "@/stores/cloud/useCloudStore";
 import { cn } from "@/lib/utils";
+import { Dialog } from "@/components/ui/dialog";
 
 type TopToolbarProps = {
   driveId?: string;
@@ -30,6 +32,9 @@ type TopToolbarProps = {
 export function TopToolbar({ driveId, folderId, showDriveChrome = false }: TopToolbarProps) {
   const router = useRouter();
   const [searchFocused, setSearchFocused] = useState(false);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [folderName, setFolderName] = useState("");
+  const [creatingFolder, setCreatingFolder] = useState(false);
 
   const {
     canGoBack,
@@ -49,8 +54,14 @@ export function TopToolbar({ driveId, folderId, showDriveChrome = false }: TopTo
     getLastLocation,
   } = useNavigationStore();
 
-  const { setCurrentGoogleFolder, successCloudAccounts, clipboard, pasteHere, clearClipboard } =
-    useCloudStore();
+  const {
+    setCurrentGoogleFolder,
+    successCloudAccounts,
+    clipboard,
+    pasteHere,
+    clearClipboard,
+    createFolder,
+  } = useCloudStore();
 
   const favorited = driveId && folderId ? isFavorite(driveId, folderId) : false;
 
@@ -60,6 +71,22 @@ export function TopToolbar({ driveId, folderId, showDriveChrome = false }: TopTo
 
   const refresh = () => {
     if (driveId) setCurrentGoogleFolder(driveId, folderId);
+  };
+
+  const submitCreateFolder = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const name = folderName.trim();
+    if (!driveId || !name || creatingFolder) return;
+    setCreatingFolder(true);
+    try {
+      const created = await createFolder(driveId, folderId ?? "root", name);
+      if (created) {
+        setFolderName("");
+        setCreateFolderOpen(false);
+      }
+    } finally {
+      setCreatingFolder(false);
+    }
   };
 
   return (
@@ -160,6 +187,18 @@ export function TopToolbar({ driveId, folderId, showDriveChrome = false }: TopTo
           </div>
         )}
 
+        {showDriveChrome && driveId && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setCreateFolderOpen(true)}
+          >
+            <FolderPlus className="size-3.5" />
+            <span className="hidden sm:inline">New folder</span>
+          </Button>
+        )}
+
         {showDriveChrome && driveId && folderId && (
           <Button
             type="button"
@@ -236,6 +275,41 @@ export function TopToolbar({ driveId, folderId, showDriveChrome = false }: TopTo
 
         <ThemeToggle />
       </div>
+      <Dialog
+        open={createFolderOpen}
+        onClose={() => {
+          if (!creatingFolder) setCreateFolderOpen(false);
+        }}
+        title="Create folder"
+      >
+        <form onSubmit={submitCreateFolder} className="flex flex-col gap-4">
+          <label htmlFor="new-folder-name" className="text-sm text-foreground">
+            Folder name
+          </label>
+          <Input
+            id="new-folder-name"
+            autoFocus
+            value={folderName}
+            onChange={(event) => setFolderName(event.target.value)}
+            placeholder="New folder"
+            maxLength={255}
+            required
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={creatingFolder}
+              onClick={() => setCreateFolderOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!folderName.trim() || creatingFolder}>
+              {creatingFolder ? "Creating…" : "Create"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
     </header>
   );
 }

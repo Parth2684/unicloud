@@ -10,22 +10,6 @@ pub enum LinkType {
     Torrent,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
-#[sea_orm(rs_type = "Enum", db_type = "Enum", enum_name = "payment_status")]
-pub enum PaymentStatus {
-    #[sea_orm(string_value = "failed")]
-    Failed,
-    #[sea_orm(string_value = "pending")]
-    Pending,
-    #[sea_orm(string_value = "authorized")]
-    Authorized,
-    #[sea_orm(string_value = "cancelled")]
-    Cancelled,
-    #[sea_orm(string_value = "captured")]
-    Captured,
-    #[sea_orm(string_value = "refunded")]
-    Refunded,
-}
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "Enum", db_type = "Enum", enum_name = "provider")]
 pub enum Provider {
     #[sea_orm(string_value = "Google")]
@@ -66,4 +50,14 @@ pub enum TransferType {
     GoogleToGoogle,
     #[sea_orm(string_value = "mega_to_google")]
     MegaToGoogle,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "Enum", db_type = "Enum", enum_name = "type")]
+pub enum Type {
+    #[sea_orm(string_value = "pending")]
+    Pending,
+    #[sea_orm(string_value = "success")]
+    Success,
+    #[sea_orm(string_value = "failed")]
+    Failed,
 }

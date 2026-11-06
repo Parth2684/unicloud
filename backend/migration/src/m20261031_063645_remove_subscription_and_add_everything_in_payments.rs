@@ -12,12 +12,8 @@ impl MigrationName for Migration {
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .alter_table(
-                Table::alter()
-                    .table(Payment::Table)
-                    .modify_column(ColumnDef::new(Payment::RazorpayOrderId).not_null())
-                    .drop_column_if_exists(Payment::SubscriptionId)
-                    .to_owned(),
+            .drop_table(
+                Table::drop().table(Payment::Table).to_owned()
             )
             .await
             .unwrap();
@@ -25,12 +21,61 @@ impl MigrationTrait for Migration {
             .drop_table(Table::drop().table(Subscription::Table).to_owned())
             .await?;
         manager
+            .drop_type(Type::drop().name(SubStatus::Table).to_owned()
+            ).await?;
+        manager
             .drop_table(Table::drop().table(Plans::Table).to_owned())
-            .await
-        
+            .await?;
+
+        manager
+            .create_type(Type::create()
+                .as_enum(OrderStatus::Type)
+                .values([OrderStatus::Pending, OrderStatus::Success, OrderStatus::Failed])
+                .to_owned()
+            ).await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(Order::Table)
+                    .if_not_exists()
+                    .col(ColumnDef::new(Order::OrderId).string().primary_key())
+                    .col(ColumnDef::new(Order::Amount).big_integer().not_null())
+                    .col(ColumnDef::new(Order::CreatedAt).timestamp_with_time_zone().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(Order::Currency).string_len(3).not_null())
+                    .col(ColumnDef::new(Order::OrderStatus).enumeration(OrderStatus::Type, [OrderStatus::Failed, OrderStatus::Pending, OrderStatus::Success]).not_null())
+                    .col(ColumnDef::new(Order::PaymentId).string())
+                    .col(ColumnDef::new(Order::UserId).uuid().not_null())
+                    .col(ColumnDef::new(Order::UpdatedAt).date_time().not_null().default(Expr::cust("NOW()")))
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-order-user-id")
+                            .from(Order::Table, Order::UserId)
+                            .to(Users::Table, Users::Id)
+                            .on_delete(ForeignKeyAction::NoAction)
+                    )
+                    .to_owned()
+            ).await?;
+            Ok(())
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+
+        manager
+            .drop_table(
+                Table::drop()
+                    .table(Order::Table)
+                    .if_exists()
+                    .to_owned()
+                )
+            .await?;
+
+        manager
+            .drop_type(
+                Type::drop()
+                    .name(OrderStatus::Type)
+                    .if_exists()
+                    .to_owned()
+                ).await?;
         // Recreate plans table
         manager
             .create_table(
@@ -53,7 +98,6 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        // Recreate the subscription status enum.
         manager
             .create_type(
                 Type::create()
@@ -126,13 +170,79 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        // Restore the payment columns changed by up().
+
         manager
-            .alter_table(
-                Table::alter()
+            .create_table(
+                Table::create()
                     .table(Payment::Table)
-                    .modify_column(ColumnDef::new(Payment::RazorpayOrderId).string())
-                    .add_column(ColumnDef::new(Payment::SubscriptionId).text())
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(Payment::RazorpayPaymentId)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(Payment::Amount)
+                            .big_integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(Payment::Currency)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(Payment::CreatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(Payment::RazorpayOrderId)
+                            .text(),
+                    )
+                    .col(
+                        ColumnDef::new(Payment::PaymentStatus)
+                            .enumeration(
+                                PaymentStatus::Table,
+                                [
+                                    PaymentStatus::Created,
+                                    PaymentStatus::Authorized,
+                                    PaymentStatus::Captured,
+                                    PaymentStatus::Refunded,
+                                    PaymentStatus::Failed,
+                                ],
+                            )
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(Payment::SubscriptionId)
+                            .string(),
+                    )
+                    .col(
+                        ColumnDef::new(Payment::UserId)
+                            .uuid()
+                            .not_null(),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_payment_subscription_id")
+                            .from(Payment::Table, Payment::SubscriptionId)
+                            .to(
+                                Subscription::Table,
+                                Subscription::RazorpaySubscriptionId,
+                            )
+                            .on_update(ForeignKeyAction::NoAction)
+                            .on_delete(ForeignKeyAction::Restrict),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_payment_user_id")
+                            .from(Payment::Table, Payment::UserId)
+                            .to(Users::Table, Users::Id)
+                            .on_update(ForeignKeyAction::NoAction)
+                            .on_delete(ForeignKeyAction::Restrict),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -180,9 +290,48 @@ enum Users {
     Id,
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(DeriveIden)]
 enum Payment {
     Table,
+    RazorpayPaymentId,
+    Amount,
+    Currency,
+    CreatedAt,
     RazorpayOrderId,
+    PaymentStatus,
     SubscriptionId,
+    UserId,
+}
+
+#[derive(DeriveIden)]
+enum PaymentStatus {
+    Table,
+    Created,
+    Authorized,
+    Captured,
+    Refunded,
+    Failed,
+}
+
+#[allow(clippy::enum_variant_names)]
+#[derive(DeriveIden)]
+enum Order {
+    Table,
+    OrderId,
+    PaymentId,
+    Amount,
+    Currency,
+    CreatedAt,
+    OrderStatus,
+    UserId,
+    UpdatedAt
+}
+
+#[derive(DeriveIden)]
+enum OrderStatus {
+    Type,
+    Pending,
+    Success,
+    Failed
 }

@@ -67,6 +67,7 @@ export type CloudActions = {
     to_drive: string,
     to_folder_id: string,
   ) => Promise<void>;
+  createFolder: (drive_id: string, parent_id: string, folder_name: string) => Promise<boolean>;
   deleteDrive: (drive_id: string, isExpired?: boolean) => Promise<void>;
   deleteFile: (drive_id: string, file_id: string) => Promise<void>;
 };

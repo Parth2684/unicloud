@@ -6,6 +6,7 @@ use axum::{
 use crate::{
     handlers::cloud::{
         copy_google::copy_file_or_folder,
+        create_folder::google,
         delete_file_google::delete_file_google,
         get_cloud_accounts::get_cloud_accounts,
         get_shared_drive::get_shared_drives,
@@ -33,5 +34,6 @@ pub fn cloud_router() -> Router {
             "/google/delete-file/{drive_id}/{file_id}",
             delete(delete_file_google),
         )
+        .route("/google/create-folder", post(google))
         .layer(middleware::from_fn(auth_middleware))
 }

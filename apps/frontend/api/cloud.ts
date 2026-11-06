@@ -47,6 +47,15 @@ export async function copyFile(payload: {
   return res.data;
 }
 
+export async function createDriveFolder(payload: {
+  drive_id: string;
+  parent_id: string;
+  folder_name: string;
+}): Promise<{ folder: DriveFile }> {
+  const res = await axiosInstance.post("/cloud/google/create-folder", payload);
+  return res.data;
+}
+
 export async function deleteDriveAccount(driveId: string): Promise<void> {
   await axiosInstance.delete(`/cloud/google/delete-drive/${driveId}`);
 }
