@@ -1,7 +1,7 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct DriveFile {
     pub id: String,
@@ -13,9 +13,9 @@ pub struct DriveFile {
     pub modified_time: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct DriveListResponse {
+pub struct DriveListResponse {
     files: Vec<DriveFile>,
     next_page_token: Option<String>,
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -31,7 +31,6 @@ type TopToolbarProps = {
 
 export function TopToolbar({ driveId, folderId, showDriveChrome = false }: TopToolbarProps) {
   const router = useRouter();
-  const [searchFocused, setSearchFocused] = useState(false);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -41,8 +40,6 @@ export function TopToolbar({ driveId, folderId, showDriveChrome = false }: TopTo
     canGoForward,
     goBack,
     goForward,
-    folderFilter,
-    setFolderFilter,
     setCommandOpen,
     setSidebarOpen,
     sidebarCollapsed,
@@ -64,10 +61,6 @@ export function TopToolbar({ driveId, folderId, showDriveChrome = false }: TopTo
   } = useCloudStore();
 
   const favorited = driveId && folderId ? isFavorite(driveId, folderId) : false;
-
-  useEffect(() => {
-    setFolderFilter("");
-  }, [driveId, folderId, setFolderFilter]);
 
   const refresh = () => {
     if (driveId) setCurrentGoogleFolder(driveId, folderId);
@@ -164,28 +157,6 @@ export function TopToolbar({ driveId, folderId, showDriveChrome = false }: TopTo
             <p className="truncate text-sm font-medium text-foreground">UniCloud</p>
           )}
         </div>
-
-        {showDriveChrome && (
-          <div
-            className={cn(
-              "flex w-full items-center gap-2 sm:w-auto sm:max-w-xs",
-              searchFocused && "sm:max-w-sm",
-            )}
-          >
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={folderFilter}
-                onChange={(e) => setFolderFilter(e.target.value)}
-                placeholder="Search current folder…"
-                aria-label="Search current folder"
-                className="h-8 pl-8"
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-              />
-            </div>
-          </div>
-        )}
 
         {showDriveChrome && driveId && (
           <Button

@@ -50,6 +50,9 @@ pub async fn google(
     let cloud_acc = CloudAccountEntity::find()
         .filter(CloudAccountColumn::Id.eq(body.drive_id))
         .filter(CloudAccountColumn::UserId.eq(claims.id))
+        .filter(CloudAccountColumn::TokenExpired.eq(false))
+        .filter(CloudAccountColumn::IsDeleted.eq(false))
+        
         .select_only()
         .column(CloudAccountColumn::AccessToken)
         .into_model::<DbRes>()
