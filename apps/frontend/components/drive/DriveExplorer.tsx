@@ -25,7 +25,7 @@ export function DriveExplorer({ drive_id, folder_id }: DriveExplorerProps) {
     folderError,
     folderLocation,
   } = useCloudStore();
-  const { setLocation, getCachedPath, folderFilter, path, navigateTo, setTreeChildren } =
+  const { setLocation, getCachedPath, path, navigateTo, setTreeChildren } =
     useNavigationStore();
 
   useEffect(() => {
@@ -63,12 +63,7 @@ export function DriveExplorer({ drive_id, folder_id }: DriveExplorerProps) {
     setLocation({ driveId: drive_id, folderId: folder_id, path: nextPath }, { pushHistory: true });
   }, [drive_id, folder_id, getCachedPath, setLocation]);
 
-  const filtered = useMemo(() => {
-    const items = Array.isArray(drive) ? drive : [];
-    const q = folderFilter.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((item) => item.name.toLowerCase().includes(q));
-  }, [drive, folderFilter]);
+  const files = useMemo(() => Array.isArray(drive) ? drive : [], [drive]);
 
   const openFolder = (item: DriveFile) => {
     const href = navigateTo({
@@ -78,6 +73,7 @@ export function DriveExplorer({ drive_id, folder_id }: DriveExplorerProps) {
     });
     router.push(href);
   };
+
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 sm:p-4">
@@ -100,16 +96,15 @@ export function DriveExplorer({ drive_id, folder_id }: DriveExplorerProps) {
               Try again
             </button>
           </div>
-        ) : filtered.length > 0 ? (
-          <FileList items={filtered} driveId={drive_id} onOpenFolder={openFolder} />
+        ) : files.length > 0 ? (
+          <FileList items={files} driveId={drive_id} onOpenFolder={openFolder} />
         ) : (
-          <EmptyFolder hasFilter={!!folderFilter.trim()} />
+          <EmptyFolder hasFilter={false} />
         )}
       </div>
       {!loading && Array.isArray(drive) && (
         <p className="text-xs text-muted-foreground">
-          {filtered.length} item{filtered.length === 1 ? "" : "s"}
-          {folderFilter.trim() ? " matching filter" : ""}
+          {files.length} item{files.length === 1 ? "" : "s"}
           {" · "}
           {drive.filter((f) => isFolder(f.mimeType)).length} folders
         </p>

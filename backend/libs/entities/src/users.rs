@@ -21,11 +21,9 @@ pub struct Model {
     #[sea_orm(has_many)]
     pub jobs: HasMany<super::job::Entity>,
     #[sea_orm(has_many)]
-    pub payments: HasMany<super::payment::Entity>,
+    pub orders: HasMany<super::order::Entity>,
     #[sea_orm(has_one)]
     pub quota: HasOne<super::quota::Entity>,
-    #[sea_orm(has_many)]
-    pub subscriptions: HasMany<super::subscription::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

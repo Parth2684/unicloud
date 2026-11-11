@@ -13,19 +13,10 @@ pub struct Model {
     pub amount: i64,
     pub currency: String,
     pub created_at: DateTimeWithTimeZone,
-    #[sea_orm(column_type = "Text", nullable)]
-    pub razorpay_order_id: Option<String>,
+    #[sea_orm(column_type = "Text")]
+    pub razorpay_order_id: String,
     pub payment_status: PaymentStatus,
-    pub subscription_id: Option<String>,
     pub user_id: Uuid,
-    #[sea_orm(
-        belongs_to,
-        from = "subscription_id",
-        to = "razorpay_subscription_id",
-        on_update = "NoAction",
-        on_delete = "Restrict"
-    )]
-    pub subscription: BelongsTo<Option<super::subscription::Entity>>,
     #[sea_orm(
         belongs_to,
         from = "user_id",

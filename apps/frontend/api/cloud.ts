@@ -37,6 +37,18 @@ export async function fetchSharedDrives(driveId: string): Promise<SharedDrive[]>
   return res.data.drives;
 }
 
+export type SearchMimeType = "audio/" | "application/vnd.google-apps.folder" | "video/" | "image/" | "application/pdf";
+export type SearchOrderBy = "modifiedTime" | "modifiedTime desc" | "quotaBytesUsed" | "quotaBytesUsed desc" | "starred";
+export type CloudSearchResult = { files: DriveFile[]; nextPageToken?: string };
+export async function searchCloudFiles(query: string, cloudAccounts: Record<string, string | null>, mimeType: SearchMimeType[], options: { orderBy?: SearchOrderBy; parentFolderId?: string } = {}): Promise<{ search_results: [CloudSearchResult, string][] }> {
+  const params = new URLSearchParams();
+  if (options.orderBy) params.set("order_by", options.orderBy);
+  if (options.parentFolderId) params.set("parent_folder_id", options.parentFolderId);
+  const suffix = params.size ? `?${params.toString()}` : "";
+  const res = await axiosInstance.post(`/cloud/google/search/${encodeURIComponent(query)}${suffix}`, { cloud_accounts: cloudAccounts, mime_type: mimeType });
+  return res.data;
+}
+
 export async function copyFile(payload: {
   from_drive: string;
   from_file_id: string;
@@ -44,6 +56,15 @@ export async function copyFile(payload: {
   to_folder_id: string;
 }): Promise<{ message: string; job: Job }> {
   const res = await axiosInstance.post("/cloud/google/google-copy", payload);
+  return res.data;
+}
+
+export async function createDriveFolder(payload: {
+  drive_id: string;
+  parent_id: string;
+  folder_name: string;
+}): Promise<{ folder: DriveFile }> {
+  const res = await axiosInstance.post("/cloud/google/create-folder", payload);
   return res.data;
 }
 

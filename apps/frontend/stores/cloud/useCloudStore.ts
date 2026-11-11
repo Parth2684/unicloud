@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { useUserStore } from "../user/useUserStore";
 import {
   copyFile,
+  createDriveFolder,
   deleteDriveAccount,
   deleteDriveFile,
   fetchCloudAccounts,
@@ -98,6 +99,27 @@ export const useCloudStore = create<CloudState & CloudActions>((set) => ({
       if (error instanceof AxiosError && error.response?.data) {
         toast.error(error.response.data.message);
       }
+    }
+  },
+
+  createFolder: async (drive_id, parent_id, folder_name) => {
+    try {
+      const data = await createDriveFolder({ drive_id, parent_id, folder_name });
+      if (data.folder) {
+        set((state) => ({ drive: state.drive ? [...state.drive, data.folder] : state.drive }));
+        toast.success(`Folder "${data.folder.name}" created`);
+        return true;
+      } else {
+        toast.error("Folder creation could not be confirmed. Refresh the folder to check.");
+        return false;
+      }
+    } catch (error) {
+      if (error instanceof AxiosError && error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Unable to create folder. Please try again.");
+      }
+      return false;
     }
   },
 

@@ -18,6 +18,7 @@ mod m20260709_055039_add_top_up_and_checks_for_handling_no_negatives;
 mod m20260714_151743_add_plan_model;
 mod m20260727_175535_add_subscription_status;
 mod m20260727_201913_rename_error_to_failed;
+mod m20261031_063645_remove_subscription_and_add_everything_in_payments;
 
 pub struct Migrator;
 
@@ -43,6 +44,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260714_151743_add_plan_model::Migration),
             Box::new(m20260727_175535_add_subscription_status::Migration),
             Box::new(m20260727_201913_rename_error_to_failed::Migration),
+            Box::new(m20261031_063645_remove_subscription_and_add_everything_in_payments::Migration),
         ]
     }
 }
